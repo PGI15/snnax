@@ -1,0 +1,53 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.15
+    code_path: code/examples/snnax_train_dvsgesture_multiloss_debug.py
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: true
+    python_version: 3.8.10
+    start_time: 1670717771
+    t:
+      1:
+      - 12
+      - 55
+      2:
+      - 1
+      - 12
+      - 41
+      - 55
+      4: 3.8.10
+      5: 0.12.15
+      8:
+      - 2
+      - 5
+act_rate:
+  desc: null
+  value: 0.0893526730482861
+alpha:
+  desc: null
+  value: 0.95
+beta:
+  desc: null
+  value: 0.85
+burnin:
+  desc: null
+  value: 342
+epochs:
+  desc: null
+  value: 500
+learning_rate:
+  desc: null
+  value: 0.020835834053865687
+ro_int:
+  desc: null
+  value: 21
+size_factor:
+  desc: null
+  value: 4
+skip_connections:
+  desc: null
+  value: false

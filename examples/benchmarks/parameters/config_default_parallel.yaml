@@ -1,0 +1,13 @@
+epochs: 100
+dt: 0.005  
+
+optim_kwargs:
+  learning_rate: 0.001
+  clip_norm: .1
+  weight_decay: .01
+
+dataset_kwargs:
+  batch_size : 1024
+  num_workers: 8
+
+model_kwargs: {}

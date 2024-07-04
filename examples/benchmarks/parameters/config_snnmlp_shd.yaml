@@ -1,0 +1,27 @@
+epochs: 1000
+dt: 0.001 
+
+dataset_kwargs:
+  root: 'data/SHD/'
+  ds: 1
+  batch_size : 256
+  num_workers: 8
+
+optim_kwargs:
+  learning_rate: 0.001
+  clip_norm: .5
+  weight_decay: .01
+
+model_kwargs:
+  burnin: 30
+  norm: True
+  ro_int: 
+  num_hid_layers: 3
+  tau_s: 0.006
+  tau_m: 0.02
+  dropout_rate: .25
+  neuron_model: "snnax.snn.AdaptiveLIF"
+
+
+
+
