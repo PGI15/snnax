@@ -64,7 +64,7 @@ It requires the following arguments:
 
 - `graph_structure (GraphStructure)`: GraphStructure object to specify network topology.
 - `layers (Sequence[eqx.Module])`: Computational building blocks of the model.
-- `forward_fn (Callable)`: Evaluation procedure/loop for the model. Defaults to [`forward_fn`](../400_functions/400_intro.md).
+- `forward_fn (Callable)`: Evaluation procedure/loop for the model. Defaults to [`default_forward_fn`](../400_functions/400_intro.md).
 
 First we need to define our layers that can be from the `equinox` library or SNNAX [snnax.snn.layers](../300_layers/300_intro.md).
 
@@ -80,7 +80,7 @@ layers = [eqx.Linear(),
 Then we need to define the [`GraphStructure`](./200_intro.md#graphstructure) object which contains meta-information about the computational graph.
 
 ```python
-graph_structure = snn.GraphStructure(3, [[0], [], [],], [2], [[2], [0], [1]])
+graph_structure = snn.GraphStructure(3, [[0], [], []], [2], [[2], [0], [1]])
 ```
 
 Finally, we can create the `StatefulModel` object by passing the `graph_structure` and `layers` as arguments.
@@ -115,19 +115,19 @@ The `GraphStructure` class requires the following arguments:
 Example:
 
 ```python
-graph_structure = snn.GraphStructure(6, [[0], [], [], [3], [], []], [5], [[], [0, 2], [1], [2, 3], [3], [4]])
+graph_structure = snn.GraphStructure(5, [[0], [], [], [0, 1], []], [4], [[], [0, 2], [1], [2, 3], [3]])
 ```
 
 ```mermaid
 graph LR;
-    Input-->0;
-    Input-->3;
+    Input0-->0;
+    Input0-->3;
+    Input1-->3;
     0-->1;
     2-->1;
     1-->2;
     2-->3;
+    3-->3;
     3-->4;
-    4-->4;
-    4-->5;
-    5-->Output;
+    4-->Output;
 ```
