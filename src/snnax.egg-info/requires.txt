@@ -1,0 +1,8 @@
+jax
+equinox
+chex
+
+[testing]
+setuptools
+pytest
+pytest-cov

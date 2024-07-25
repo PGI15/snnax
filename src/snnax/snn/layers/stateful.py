@@ -1,12 +1,11 @@
 from typing import Sequence, Union, Callable, Optional
 
-import jax
 import jax.numpy as jnp
-from typing import Sequence, Union, Callable, Optional, Tuple, List
 
 import equinox as eqx
 from equinox import static_field
 from chex import Array, PRNGKey
+
 
 class TrainableArray(eqx.Module):
     data: Array
@@ -15,6 +14,7 @@ class TrainableArray(eqx.Module):
     def __init__(self, data: Array, requires_grad: bool = True):
         self.data = data
         self.requires_grad = requires_grad
+
 
 class StatefulLayer(eqx.Module):
     """
