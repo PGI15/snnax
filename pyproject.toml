@@ -7,3 +7,25 @@ build-backend = "setuptools.build_meta"
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
+
+[project]
+name = "snnax"
+version = "0.0.1"
+authors = [
+  {name="Jamie Lohoff", email="jamie.lohoff@gmail.com"},
+  {name="Jan Finkbeiner", email="j.finkbeiner@fz-juelich.de"},
+  {name="Emre Neftci", email="e.neftci@fz-juelich.de"},
+]
+description = "A library for spiking neural networks in JAX."
+readme = "README.rst"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/PGI15/snnax"
+Issues = "https://github.com/PGI15/snnax/issues"
+Documentation = "https://pgi15.github.io/snnax/layers"

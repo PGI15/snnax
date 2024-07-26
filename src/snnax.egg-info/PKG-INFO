@@ -1,20 +1,21 @@
 Metadata-Version: 2.1
 Name: snnax
-Version: 0.0.post1.dev4+g170a633
-Summary: Add a short description here!
+Version: 0.0.1
+Summary: A library for spiking neural networks in JAX.
 Home-page: https://github.com/pyscaffold/pyscaffold/
 Author: Jamie Lohoff
-Author-email: j.grieser@fz-juelich.de
-License: MIT
-Project-URL: Documentation, https://pyscaffold.org/
+Author-email: Jamie Lohoff <jamie.lohoff@gmail.com>, Jan Finkbeiner <j.finkbeiner@fz-juelich.de>, Emre Neftci <e.neftci@fz-juelich.de>
+Project-URL: Homepage, https://github.com/PGI15/snnax
+Project-URL: Issues, https://github.com/PGI15/snnax/issues
+Project-URL: Documentation, https://pgi15.github.io/snnax/layers
 Platform: any
-Classifier: Development Status :: 4 - Beta
-Classifier: Programming Language :: Python
-Description-Content-Type: text/x-rst; charset=UTF-8
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/x-rst
 License-File: LICENSE.txt
-Requires-Dist: jax
-Requires-Dist: equinox
-Requires-Dist: chex
+License-File: AUTHORS.rst
 Provides-Extra: testing
 Requires-Dist: setuptools; extra == "testing"
 Requires-Dist: pytest; extra == "testing"

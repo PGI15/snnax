@@ -61,14 +61,10 @@ src/snnax.egg-info/not-zip-safe
 src/snnax.egg-info/requires.txt
 src/snnax.egg-info/top_level.txt
 src/snnax/functional/__init__.py
-src/snnax/functional/functional.py
 src/snnax/functional/surrogate.py
 src/snnax/snn/__init__.py
 src/snnax/snn/architecture.py
 src/snnax/snn/composed.py
-src/snnax/snn/init.py
-src/snnax/snn/test_lry.py
-src/snnax/snn/utils.py
 src/snnax/snn/layers/__init__.py
 src/snnax/snn/layers/flatten.py
 src/snnax/snn/layers/iaf.py
@@ -78,7 +74,6 @@ src/snnax/snn/layers/maxpool2d.py
 src/snnax/snn/layers/srm.py
 src/snnax/snn/layers/stateful.py
 src/snnax/utils/__init__.py
-src/snnax/utils/dataloaders.py
 src/snnax/utils/tree.py
 tests/arch_test.py
 tests/conftest.py
