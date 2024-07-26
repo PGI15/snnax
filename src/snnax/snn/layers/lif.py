@@ -1,4 +1,4 @@
-from typing import Sequence, Union, Callable, Optional, Tuple, List
+from typing import Callable, Optional, Sequence, Union, Tuple
 
 import jax
 import jax.lax as lax
@@ -19,17 +19,17 @@ class SimpleLIF(StatefulLayer):
     Requires one decay constant to simulate membrane potential leak.
     
     Arguments:
-        - `decay_constants`: Decay constant of the simple LIF neuron.
-        - `spike_fn`: Spike treshold function with custom surrogate gradient.
-        - `threshold`: Spike threshold for membrane potential. Defaults to 1.
-        - `reset_val`: Reset value after a spike has been emitted.
-        - `stop_reset_grad`: Boolean to control if the gradient is propagated
+        `decay_constants`: Decay constant of the simple LIF neuron.
+        `spike_fn`: Spike treshold function with custom surrogate gradient.
+        `threshold`: Spike threshold for membrane potential. Defaults to 1.
+        `reset_val`: Reset value after a spike has been emitted.
+        `stop_reset_grad`: Boolean to control if the gradient is propagated
                         through the refectory potential.
-        - `init_fn`: Function to initialize the initial state of the 
+        `init_fn`: Function to initialize the initial state of the 
                     spiking neurons. Defaults to initialization with zeros 
                     if nothing else is provided.
-        - 'shape' if given, the parameters will be expanded into vectors and initialized accordingly
-        - 'key' used to initialize the parameters when shape is not None
+        `shape`: if given, the parameters will be expanded into vectors and initialized accordingly
+        `key` (PRNGKey): used to initialize the parameters when shape is not None
     """
     decay_constants: Union[Sequence[float], Array, TrainableArray] 
     threshold: float = static_field()
@@ -44,8 +44,8 @@ class SimpleLIF(StatefulLayer):
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
                 init_fn: Optional[Callable] = None,
-                shape: Union[Sequence[int],int,None] = None,
-                key: PRNGKey = jax.random.PRNGKey(0),
+                shape: Union[Sequence[int], int, None] = None,
+                key: Optional[PRNGKey] = None,
                 **kwargs) -> None:
 
         super().__init__(init_fn)
@@ -65,7 +65,7 @@ class SimpleLIF(StatefulLayer):
                 key: Optional[PRNGKey] = None) -> Sequence[Array]:
         alpha = jax.lax.clamp(0.5, self.decay_constants.data[0], 1.0)
         mem_pot = state[0]
-        mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input # TODO with (1-alpha) or without ?
+        mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input
         spike_output = self.spike_fn(mem_pot-self.threshold)
 
         

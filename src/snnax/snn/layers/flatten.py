@@ -5,12 +5,15 @@ import jax.numpy as jnp
 import jax.random as jrand
 
 import equinox as eqx
+from chex import Array, PRNGKey
 
 
 class Flatten(eqx.Module):
     """
     Simple module to flatten the output of a layer.
     """
-    def __call__(self, x, *, key: Optional[jrand.PRNGKey] = None):
-        return jnp.reshape(x, -1)
+    def __call__(self, 
+                x: Array, *, 
+                key: Optional[PRNGKey] = None) -> Array:
+        return x.flatten()
 
