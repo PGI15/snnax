@@ -306,7 +306,7 @@ class StatefulModel(eqx.Module):
         return states
 
     def __call__(self, 
-                input_states: Sequence[jnp.ndarray], 
+                input_states: Sequence[Array], 
                 input_batch,
                 key: jrand.PRNGKey,
                 burnin: int = 0) -> Tuple:
