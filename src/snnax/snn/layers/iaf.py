@@ -8,7 +8,7 @@ from equinox import static_field
 
 from chex import Array, PRNGKey
 from .stateful import StatefulLayer
-from ...functional.surrogate import superspike_surrogate
+from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 
 class SimpleIAF(StatefulLayer):
@@ -17,49 +17,47 @@ class SimpleIAF(StatefulLayer):
     which does not make explicit use of synaptic currents.
     It integrates the raw synaptic input without any decay.
     Requires one constant to simulate constant membrane potential leak.
+
+    Arguments:
+
+        `leak` (float): Describes the constant leak of the membrane potential.
+            Defaults to zero, i.e. no leak.
+        `threshold` (float): Spike threshold for membrane potential. Defaults to 1.
+        `spike_fn` (SpikeFn): Spike treshold function with custom surrogate 
+            gradient.
+        `stop_reset_grad` (bool): Boolean to control if the gradient is 
+            propagated through the refectory potential.
+        `reset_val` (float): Reset value of the membrane potential after a spike 
+            has been emitted. Defaults to None.
+        `init_fn`: Function to initialize the state of the spiking neurons.
+            Defaults to initialization with zeros if nothing else is provided.
     """
     leak: float = static_field()
     threshold: float = static_field()
-    spike_fn: Callable = static_field()
+    spike_fn: SpikeFn = static_field()
     stop_reset_grad: bool = static_field()
     reset_val: Optional[float] = static_field()
 
     def __init__(self,
-            spike_fn: Callable = superspike_surrogate(10.), 
-            leak: float = 0.,
-            threshold: float = 1.,
-            stop_reset_grad: bool = True,
-            reset_val: Optional[float] = None,
-            init_fn: Optional[Callable] = None) -> None:
-        """
-        Arguments:
-            - `spike_fn`: Spike treshold function with custom surrogate gradient.
-            - `leak`: Describes the constant leak of the membrane potential.
-                Defaults to zero, i.e. no leak.
-            - `threshold`: Spike threshold for membrane potential. Defaults to 1.
-            - `reset_val`: Reset value after a spike has been emitted. 
-                            Defaults to None.
-            - `stop_reset_grad`: Boolean to control if the gradient is propagated
-                                through the refectory potential.
-            - `init_fn`: Function to initialize the state of the spiking neurons.
-                        Defaults to initialization with zeros if 
-                        nothing else is provided.
-        """
-
+                leak: float = 0.,
+                threshold: float = 1.,
+                spike_fn: SpikeFn = superspike_surrogate(10.), 
+                stop_reset_grad: bool = True,
+                reset_val: Optional[float] = None,
+                init_fn: Optional[Callable] = None) -> None:
         super().__init__(init_fn)
         
         # TODO assert for numerical stability 0.999 leads to errors...
         self.threshold = threshold
         self.leak = leak
         self.spike_fn = spike_fn
-
-        self.reset_val = reset_val if reset_val is not None else None
         self.stop_reset_grad = stop_reset_grad
+        self.reset_val = reset_val if reset_val is not None else None
 
     def __call__(self, 
                 state: Array, 
                 synaptic_input: Array, *, 
-                key: Optional[PRNGKey] = None) -> Sequence[jnp.ndarray]:
+                key: Optional[PRNGKey] = None) -> Sequence[Array]:
 
         mem_pot = state
         mem_pot = (mem_pot-self.leak) + synaptic_input
@@ -92,9 +90,9 @@ class IAF(StatefulLayer):
 
     def __init__(self,
                 decay_constants: Union[Sequence[float], Array],
-                spike_fn: Callable = superspike_surrogate(10.),
                 leak: float = 0.,
                 threshold: float = 1.,
+                spike_fn: Callable = superspike_surrogate(10.),
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
                 init_fn: Optional[Callable] = None) -> None:

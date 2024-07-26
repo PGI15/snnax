@@ -60,12 +60,4 @@ class StatefulLayer(eqx.Module):
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None):
         pass
-        
-class RequiresStateLayer(eqx.Module):
-    """
-    Base class to define custom spiking neuron types.
-    """
-    def __call__(self, state):
-        raise NotImplementedError
-
 

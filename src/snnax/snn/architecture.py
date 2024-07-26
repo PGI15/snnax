@@ -1,6 +1,6 @@
 import functools as ft
 from dataclasses import dataclass
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.lax as lax
@@ -12,7 +12,7 @@ from equinox import static_field
 
 from chex import Array, PRNGKey
 from jaxtyping import PyTree
-from .layers.stateful import StatefulLayer, RequiresStateLayer
+from .layers.stateful import StatefulLayer
 
 
 @dataclass
@@ -35,11 +35,19 @@ class GraphStructure:
     input_connectivity: Sequence[Sequence[int]]
 
 
+ForwardFnOutput = Tuple[Sequence[Array], Sequence[Array]]
+ForwardFn = Callable[[Sequence[eqx.Module], 
+                    GraphStructure, 
+                    PRNGKey, 
+                    Sequence[Array], 
+                    PyTree], ForwardFnOutput]
+
+
 def default_forward_fn(layers: Sequence[eqx.Module], 
                         struct: GraphStructure, 
                         key: PRNGKey,
-                        carry: Sequence[Array], 
-                        data: PyTree) -> Tuple:
+                        carry: Tuple[Sequence[Array], Sequence[Array]], 
+                        data: PyTree) -> ForwardFnOutput:
     """
     Computes the forward pass through the layers in a straight-through manner,
     i.e. every layer takes the input from the last layer at the same time step.
@@ -84,11 +92,11 @@ def default_forward_fn(layers: Sequence[eqx.Module],
             new_states.append(new_state)
             if ilayer == len(layers)-1:
                 new_outs.append(new_out)
-        elif isinstance(layer, RequiresStateLayer):
-            new_out = layer(inputs_v, key=key)
-            new_states.append([new_out])
-            if ilayer == len(layers)-1:
-                new_outs.append(new_out)            
+        # elif isinstance(layer, RequiresStateLayer):
+        #     new_out = layer(inputs_v, key=key)
+        #     new_states.append([new_out])
+        #     if ilayer == len(layers)-1:
+        #         new_outs.append(new_out)            
         else:
             new_out = layer(inputs, key=key)
             new_states.append([new_out])
@@ -102,7 +110,7 @@ def debug_forward_fn(layers: Sequence[eqx.Module],
                         struct: GraphStructure, 
                         key: PRNGKey,
                         carry: Tuple[Sequence[Array], Sequence[Array]], 
-                        data: PyTree) -> Tuple[Sequence[Array], Sequence[Array]]:
+                        data: PyTree) -> ForwardFnOutput:
     """
     Computes the forward pass through the layers in a delayed manner,
     i.e. every layer takes the input from the last layer at the last time step.
@@ -148,10 +156,10 @@ def debug_forward_fn(layers: Sequence[eqx.Module],
             new_state, new_out  = layer(state, inputs, key=key)
             new_states.append(new_state)
             new_outs.append(new_state)
-        elif isinstance(layer, RequiresStateLayer):
-            new_out = layer(inputs_v, key=key)
-            new_states.append([new_out])
-            new_outs.append(new_out)            
+        # elif isinstance(layer, RequiresStateLayer):
+        #     new_out = layer(inputs_v, key=key)
+        #     new_states.append([new_out])
+        #     new_outs.append(new_out)            
         else:
             new_out = layer(inputs, key=key)
             new_states.append([new_out])
@@ -160,53 +168,52 @@ def debug_forward_fn(layers: Sequence[eqx.Module],
     new_carry = new_states
     return new_carry, new_outs 
 
-## Commented because needs to be fixed with new state and output format (see default forward)
-# def delayed_forward_fn(layers: Sequence[eqx.Module], 
-#                         struct: GraphStructure, 
-#                         key: jrand.PRNGKey,
-#                         carry: Tuple, 
-#                         batch) -> Tuple:
-#     """TODO add docstring
-#     This class contains meta-information about the computational graph.
-#     It can be used in conjunction with the StatefulModel class to construct 
-#     a computational model.
 
-#     **Arguments**:
+def delayed_forward_fn(layers: Sequence[eqx.Module], 
+                        struct: GraphStructure, 
+                        key: PRNGKey,
+                        carry: Tuple[Sequence[Array], Sequence[Array]], 
+                        batch) -> ForwardFnOutput:
+    """TODO add docstring
+    This class contains meta-information about the computational graph.
+    It can be used in conjunction with the StatefulModel class to construct 
+    a computational model.
 
-#     - `num_layers`: Specifies the number of layers we want to have in our model.
-#     - `input_layer_ids`: Specifies which layers are provided with external input
-#     - `final_layer_ids`: Specifies which layers provide the output of the model.
-#     - `input_connectivity`: Specifies how the layers are connected to each other. 
-#     """
-#     keys = jrand.split(key, len(layers))
-#     new_states, new_outs = [], []
-#     snn_states, outs = carry
+    Arguments:
+        `num_layers`: Specifies the number of layers we want to have in our model.
+        `input_layer_ids`: Specifies which layers are provided with external input
+        `final_layer_ids`: Specifies which layers provide the output of the model.
+        `input_connectivity`: Specifies how the layers are connected to each other. 
+    """
+    keys = jrand.split(key, len(layers))
+    new_states, new_outs = [], []
+    snn_states, outs = carry
 
-#     batch = batch if isinstance(batch, Sequence) else [batch]
+    batch = batch if isinstance(batch, Sequence) else [batch]
 
-#     for ilayer, (key, state, layer) in enumerate(zip(keys, snn_states, layers)):
-#         # Grab output from nodes for which 
-#         # the connectivity graph specifies a connection
-#         inputs = [outs[id] for id in struct.input_connectivity[ilayer]]
+    for ilayer, (key, state, layer) in enumerate(zip(keys, snn_states, layers)):
+        # Grab output from nodes for which 
+        # the connectivity graph specifies a connection
+        inputs = [outs[id] for id in struct.input_connectivity[ilayer]]
 
-#         # If the node is also a input layer, also append external input
-#         external_inputs = [batch[id] for id in struct.input_layer_ids[ilayer]]
-#         inputs += external_inputs
+        # If the node is also a input layer, also append external input
+        external_inputs = [batch[id] for id in struct.input_layer_ids[ilayer]]
+        inputs += external_inputs
 
-#         inputs = jnp.concatenate(inputs, axis=-1)
+        inputs = jnp.concatenate(inputs, axis=-1)
 
-#         # Check if node is a StatefulLayer
-#         if isinstance(layer, StatefulLayer):
-#             state, out  = layer(state, inputs, key=key)
-#             new_states.append(state)
-#             new_outs.append(out)
-#         else:
-#             out = layer(inputs, key=key)
-#             new_states.append(None)
-#             new_outs.append(out)
+        # Check if node is a StatefulLayer
+        if isinstance(layer, StatefulLayer):
+            state, out  = layer(state, inputs, key=key)
+            new_states.append(state)
+            new_outs.append(out)
+        else:
+            out = layer(inputs, key=key)
+            new_states.append(None)
+            new_outs.append(out)
 
-#     new_carry = (new_states, new_outs)
-#     return new_carry, new_outs
+    new_carry = (new_states, new_outs)
+    return new_carry, new_outs
 
 
 class StatefulModel(eqx.Module):
@@ -225,7 +232,7 @@ class StatefulModel(eqx.Module):
     """
     graph_structure: GraphStructure = static_field()
     layers: Sequence[eqx.Module]
-    forward_fn: Callable = static_field()
+    forward_fn: ForwardFn = static_field()
 
     def __init__(self, 
                 graph_structure: GraphStructure, 
@@ -242,16 +249,16 @@ class StatefulModel(eqx.Module):
 
     def init_state(self, 
                    in_shape: Union[Sequence[Tuple[int]], Tuple[int]], 
-                   key: PRNGKey) -> Sequence[Array]:
+                   key: Optional[PRNGKey]) -> Sequence[Array]:
         """
         Init function that recursively calls the init functions of the stateful
         layers. Non-stateful layers are initialized as None and their output
         shape is computed using a mock input.
         
         Arguments:
-            - `in_shape`: GraphStructure object to specify network topology.
-            - `key`: Computational building blocks of the model.
-        Output:
+            `in_shape`: GraphStructure object to specify network topology.
+            `key`: Computational building blocks of the model.
+        Returns:
         """
         keys = jrand.split(key, len(self.layers))
         states, outs = [], []
@@ -282,12 +289,12 @@ class StatefulModel(eqx.Module):
                 outs.append(out)
             # This allows the usage of modules from equinox
             # by calculating the output shape with a mock input
-            elif isinstance(layer, RequiresStateLayer):
-                mock_input = jnp.zeros(in_shape)
-                out = layer(mock_input)
-                in_shape = out.shape
-                states.append([out])
-                outs.append(out)
+            # elif isinstance(layer, RequiresStateLayer):
+            #     mock_input = jnp.zeros(in_shape)
+            #     out = layer(mock_input)
+            #     in_shape = out.shape
+            #     states.append([out])
+            #     outs.append(out)
             elif isinstance(layer, eqx.Module):
                 out = layer(inputs, key=key)
                 in_shape = out.shape
