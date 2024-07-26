@@ -1,5 +1,6 @@
 import functools as ft
-from typing import Callable, NamedTuple, Sequence, Tuple, Union
+from dataclasses import dataclass
+from typing import Callable, Sequence, Tuple, Union
 
 import jax
 import jax.lax as lax
@@ -13,17 +14,20 @@ from chex import Array, PRNGKey
 from jaxtyping import PyTree
 from .layers.stateful import StatefulLayer, RequiresStateLayer
 
-class GraphStructure(NamedTuple):
+
+@dataclass
+class GraphStructure:
     """
     This class contains meta-information about the computational graph.
-    It can be used in conjunction with the StatefulModel class to construct 
+    It can be used in conjunction with the `StatefulModel` class to construct 
     a computational model.
 
     Arguments:
-        - `num_layers`: The number of layers we want to have in our model.
-        - `input_layer_ids`: Index of the layers are provided with external input
-        - `final_layer_ids`: Index of the layers whose output we want (deprecated).
-        - `input_connectivity`: Specifies how the layers are connected to each other. 
+        `num_layers` (int): The number of layers we want to have in our model.
+        `input_layer_ids` (Sequence[int]): Index of the layers are provided with 
+            external input
+        `input_connectivity` (Sequence[Sequence[int]]): Specifies how the layers 
+            are connected to each other. 
     """
     num_layers: int
     input_layer_ids: Sequence[Sequence[int]]
@@ -42,11 +46,11 @@ def default_forward_fn(layers: Sequence[eqx.Module],
     The layers are traversed in the order specified by the connectivity graph.
 
     Arguments:
-        - `layers`: Specifies the number of layers we want to have in our model.
-        - `struct`: Specifies which layers are provided with external input
-        - `key`: Specifies which layers provide the output of the model.
-        - `carry`: Specifies how the layers are connected to each other. 
-        - `data`: Input data of the model.
+        `layers`: Specifies the number of layers we want to have in our model.
+        `struct`: Specifies which layers are provided with external input
+        `key`: Specifies which layers provide the output of the model.
+        `carry`: Specifies how the layers are connected to each other. 
+        `data`: Input data of the model.
     """
     # TODO remove instance checks because they are a performance bottleneck
     keys = jrand.split(key, len(layers))
@@ -107,13 +111,12 @@ def debug_forward_fn(layers: Sequence[eqx.Module],
     The layers are traversed in the order specified by the connectivity graph.
 
     Arguments:
-        - `layers`: Specifies the number of layers we want to have in our model.
-        - `struct`: Specifies which layers are provided with external input
-        - `key`: Specifies which layers provide the output of the model.
-        - `carry`: Specifies how the layers are connected to each other. 
-        - `data`: Input data of the model.
+        `layers`: Specifies the number of layers we want to have in our model.
+        `struct`: Specifies which layers are provided with external input
+        `key`: Specifies which layers provide the output of the model.
+        `carry`: Specifies how the layers are connected to each other. 
+        `data`: Input data of the model.
     """
-    # TODO remove instance checks because they are a performance bottleneck
     keys = jrand.split(key, len(layers))
     new_states, new_outs = [], []
     states = carry
@@ -213,9 +216,10 @@ class StatefulModel(eqx.Module):
     Has to inherit from eqx.Module to be a callable pytree.
     
     Arguments:
-        - `graph_structure`: GraphStructure object to specify network topology.
-        - `layers`: Computational building blocks of the model.
-        - `forward_fn`: Evaluation procedure/loop for the model. 
+        `graph_structure` (GraphStructure): GraphStructure object to specify 
+            network connectivity.
+        `layers` (Sequence[eqx.Module]): Computational building blocks of the model.
+        `forward_fn` (Callable): Evaluation procedure/loop for the model. 
                         Defaults to backprop through time using lax.scan().
     Output:
     """
@@ -305,13 +309,12 @@ class StatefulModel(eqx.Module):
                                 self.graph_structure,
                                 key)       
         
-        # Performes the actual BPTT when differentiated
-        if burnin>0:
+        if burnin > 0:
             new_states, new_outs = lax.scan(forward_fn, 
                                             input_states, 
                                             input_batch[:burnin])
 
-                    # Performes the actual BPTT when differentiated
+            # Performes the actual BPTT when differentiated
             new_states, new_outs = lax.scan(forward_fn, 
                                             jax.lax.stop_gradient(new_states), 
                                             input_batch[burnin:])
@@ -319,8 +322,5 @@ class StatefulModel(eqx.Module):
             new_states, new_outs = lax.scan(forward_fn, 
                                             input_states, 
                                             input_batch)
-
-            
-
         return new_states, new_outs         
 

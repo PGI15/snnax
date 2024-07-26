@@ -1,6 +1,4 @@
-from typing import Sequence, Tuple, Callable
-
-import jax
+from typing import Callable, Sequence, Tuple
 import equinox as eqx
 
 from .architecture import StatefulModel, GraphStructure, default_forward_fn
