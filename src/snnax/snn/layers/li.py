@@ -9,7 +9,7 @@ from equinox import static_field
 from chex import Array, PRNGKey
 from .stateful import StatefulLayer
 
-
+# TODO implement a version with synaptic current
 class LI(StatefulLayer):
     """
     Implementation of a simple leaky integrator neuron layer which integrates 

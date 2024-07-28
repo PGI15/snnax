@@ -2,7 +2,6 @@ import os
 import argparse
 import numpy as np
 from tqdm import tqdm
-import wandb
 
 import jax
 import jax.numpy as jnp
@@ -11,13 +10,11 @@ import jax.random as jrand
 from jax.tree_util import tree_map
 
 import optax
-import snnax as snx
 import snnax.snn as snn
 from torch.utils.data import DataLoader
 from snnax.functional import one_hot_cross_entropy
 import equinox as eqx
 
-import tonic
 from tonic.transforms import Compose, Downsample, ToFrame
 
 from utils import calc_accuracy, DVSGestures, RandomSlice
@@ -112,17 +109,6 @@ test_dataloader = DataLoader(test_dataset,
                             num_workers=8)
 
 
-# Parameters stored for wandb
-print("Saving model as", args.name)
-wandb.init(project="jax-gestures")
-wandb.run.name = args.name
-wandb.config = {
-    "epochs": EPOCHS,
-    "batchsize": BATCH_SIZE,
-    "learning_rate": args.lr,
-}
-
-
 key1, key2, key3, key4, key = jrand.split(key, 5)
 
 model = snn.Sequential(
@@ -215,9 +201,6 @@ def update(model,
 
 
 # Initialization is important for model performance
-init_batch = jnp.asarray(next(iter(train_dataloader))[0], dtype=jnp.float32)
-model = snn.init.lsuv(model, init_batch, init_key, max_iters=100)
-    
 optim = optax.adam(args.lr)
 opt_state = optim.init(eqx.filter(model, eqx.is_inexact_array))
 
@@ -244,7 +227,6 @@ for epoch in nbar:
             
         losses.append(loss/BATCH_SIZE)
         
-        wandb.log({"loss": loss/BATCH_SIZE})
         pbar.set_description(f"loss: {loss/BATCH_SIZE}")
 
     # Turn off dropout for model tests
@@ -275,7 +257,5 @@ for epoch in nbar:
         test_accuracies.append(test_acc)
 
     model = eqx.tree_inference(model, False)
-    wandb.log({"train_accuracy": np.mean(train_accuracies)})
-    wandb.log({"test_accuracy": np.mean(test_accuracies)})
     nbar.set_description(f"epoch: {epoch}, loss = {np.mean(losses)}, train_accuracy = {np.mean(train_accuracies):.2f}, test_accuracy = {np.mean(test_accuracies):.2f}")
 

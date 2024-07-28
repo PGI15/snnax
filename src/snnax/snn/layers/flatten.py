@@ -1,16 +1,13 @@
 from typing import Optional
 
-import jax
-import jax.numpy as jnp
-import jax.random as jrand
-
 import equinox as eqx
 from chex import Array, PRNGKey
 
 
 class Flatten(eqx.Module):
     """
-    Simple module to flatten the output of a layer.
+    Simple module to flatten the output of a layer. The input has to be a numpy
+    or jax.numpy array with at least one dimension.
     """
     def __call__(self, 
                 x: Array, *, 

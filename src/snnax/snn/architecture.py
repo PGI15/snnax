@@ -31,7 +31,6 @@ class GraphStructure:
     """
     num_layers: int
     input_layer_ids: Sequence[Sequence[int]]
-    final_layer_ids: Sequence[int]
     input_connectivity: Sequence[Sequence[int]]
 
 
@@ -182,7 +181,6 @@ def delayed_forward_fn(layers: Sequence[eqx.Module],
     Arguments:
         `num_layers`: Specifies the number of layers we want to have in our model.
         `input_layer_ids`: Specifies which layers are provided with external input
-        `final_layer_ids`: Specifies which layers provide the output of the model.
         `input_connectivity`: Specifies how the layers are connected to each other. 
     """
     keys = jrand.split(key, len(layers))

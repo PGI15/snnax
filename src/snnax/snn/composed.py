@@ -20,13 +20,12 @@ class Sequential(StatefulModel):
                 *layers: Sequence[eqx.Module],
                 forward_fn: Callable = default_forward_fn) -> None:
         num_layers = len(list(layers))
-        input_connectivity, input_layer_ids, final_layer_ids = gen_feed_forward_struct(num_layers)
+        input_connectivity, input_layer_ids = gen_feed_forward_struct(num_layers)
 
         # Constructing the connectivity graph
         graph_structure = GraphStructure(
             num_layers = num_layers,
             input_layer_ids = input_layer_ids,
-            final_layer_ids = final_layer_ids,
             input_connectivity = input_connectivity
         )
 
