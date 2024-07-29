@@ -61,3 +61,18 @@ class StatefulLayer(eqx.Module):
                 key: Optional[PRNGKey] = None):
         pass
 
+
+class RequiresStateLayer(eqx.Module):
+    """
+    TODO check if this is obsolete
+    Base class to define custom layers that do not have an internal state, 
+    but require the previous layer state to compute the output (e.g. pooling).
+    """
+    def __call__(self, state):
+        """
+        Outputs:
+        output_passed_to_next_layer: [Array]
+        """
+        raise NotImplementedError
+
+
