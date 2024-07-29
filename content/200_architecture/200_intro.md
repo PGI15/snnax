@@ -15,7 +15,7 @@ The `StatefulModel` class enables the creation of custom SNNs with nearly arbitr
 
 - `graph_structure (GraphStructure)`: A `GraphStructure` object that specifies the network topology.
 - `layers (Sequence[eqx.Module])`: The computational building blocks of the model.
-- `forward_fn (Callable)`: The evaluation procedure/loop for the model. Defaults to [`default_forward_fn`](../400_functions#default_forward_fn).
+- `forward_fn (Callable)`: The evaluation procedure/loop for the model. Defaults to [`default_forward_fn`](../400_functions.md#default_forward_fn).
 
 ### Methods
 
