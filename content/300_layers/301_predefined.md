@@ -25,7 +25,7 @@ State update function is given by the following equation:
 
 $$
 \begin{aligned}
-\text{membrane\_potential}(t) &=  (\text{membrane\_potential}(t-1) - \text{reset\_val} \cdot synaptic\_input - \text{leak}) + \text{synaptic\_input} \\
+\text{membrane\_potential}(t) &=  (\text{membrane\_potential}(t-1) - \text{reset\_val} \cdot \text{synaptic\_input} - \text{leak}) + \text{synaptic\_input} \\
 \text{spike\_output} &= \text{spike\_fn}(\text{membrane\_potential}(t) - \text{threshold})
 \end{aligned}
 $$
@@ -47,7 +47,7 @@ State update function is given by the following equation:
 
 $$
 \begin{aligned}
-\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - \text{reset\_val} \cdot synaptic\_input - \text{leak}) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
+\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - \text{reset\_val} \cdot \text{synaptic\_input} - \text{leak}) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
 \text{synaptic\_current}(t) &= \beta \cdot \text{synaptic\_current}(t-1) + (1 - \beta) \cdot \text{synaptic\_input} \\
 \text{spike\_output} &= \text{spike\_fn}(\text{membrane\_potential}(t) - \text{threshold})
 \end{aligned}
@@ -113,7 +113,7 @@ State update function is given by the following equation:
 
 $$
 \begin{aligned}
-\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - (\text{membrane\_potential}(t-1) - \text{reset\_val}) \cdot synaptic\_input) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
+\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - (\text{membrane\_potential}(t-1) - \text{reset\_val}) \cdot \text{synaptic\_input}) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
 \text{synaptic\_current}(t) &= \beta \cdot \text{synaptic\_current}(t-1) + (1 - \beta) \cdot \text{synaptic\_input} \\
 \text{spike\_output} &= \text{spike\_fn}(\text{membrane\_potential}(t) - \text{threshold})
 \end{aligned}
@@ -139,7 +139,7 @@ State update function is given by the following equation:
 
 $$
 \begin{aligned}
-\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - \text{reset\_val} \cdot synaptic\_input) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
+\text{membrane\_potential}(t) &= \alpha \cdot (\text{membrane\_potential}(t-1)  - \text{reset\_val} \cdot \text{synaptic\_input}) + (1 - \alpha) \cdot \text{synaptic\_current}(t-1) \\
 \text{synaptic\_current}(t) &= \beta \cdot \text{synaptic\_current}(t-1) + (1 - \beta) \cdot \text{synaptic\_input} \\
 \text{spike\_output} &= \text{spike\_fn}(\text{membrane\_potential}(t) - \text{threshold})
 \end{aligned}
