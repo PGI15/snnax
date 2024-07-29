@@ -28,9 +28,9 @@ class StatefulLayer(eqx.Module):
         self.init_fn = init_fn
 
     @staticmethod
-    def init_parameters(    parameters: Union[float, Sequence[float]], 
-                            shape: Optional[Union[int, Sequence[int]]] = None,
-                            requires_grad: bool = True):
+    def init_parameters(parameters: Union[float, Sequence[float]], 
+                        shape: Optional[Union[int, Sequence[int]]] = None,
+                        requires_grad: bool = True):
         if shape is None:
             _p = TrainableArray(parameters, requires_grad)
         else:

@@ -22,6 +22,7 @@ docs/_static/.gitignore
 examples/gestures_bptt.py
 examples/snnax_train_dvsgesture_multiloss.py
 examples/snnax_train_nmnist_mlp_multiloss.py
+examples/tutorial_DVS_gestures.ipynb
 examples/utils.py
 examples/benchmarks/README.md
 examples/benchmarks/benchmark_datasets.py
@@ -78,5 +79,6 @@ src/snnax/utils/__init__.py
 src/snnax/utils/tree.py
 tests/arch_test.py
 tests/conftest.py
+tests/layer_test.py
 tests/recurrent_test.py
 tests/tree_utils_test.py

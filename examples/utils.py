@@ -9,23 +9,19 @@ import equinox as eqx
 
 from jax.tree_util import tree_map
 
-### Functions for calculating the accuracy
-@eqx.filter_jit
+# Functions for calculating the accuracy
 @ft.partial(jax.vmap, in_axes=(None, None, 0, 0))
 def predict(model, state, data, key):
     return model(state, data, key=key)
 
 @eqx.filter_jit
-def calc_accuracy(model, state, data, target, key, normalized=True):
+def calc_accuracy(model, state, data, target, key):
     keys = jrand.split(key, data.shape[0])
     _, out = predict(model, state, data, keys)
+
     # sum over spikes
     pred = tree_map(lambda x: jnp.sum(x, axis=1), out[-1]).argmax(axis=-1)
-
-    if normalized:
-        return (pred == target).mean()
-    else:
-        return (pred == target).sum()
+    return (pred == target).mean()
 
 class DVSGestures(object):
     def __init__(self, 
@@ -65,7 +61,7 @@ class DVSGestures(object):
                     self.sample_duration = duration
 
                 npy_file = os.path.join(usrdir, fname)
-                for i in range(n_slices):
+                for _ in range(n_slices):
                     self.file_list.append(npy_file)
                     self.time_stamps.append(t_stamp)
                     t_stamp += self.sample_duration

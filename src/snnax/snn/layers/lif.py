@@ -7,9 +7,8 @@ import jax.numpy as jnp
 from equinox import static_field, Module
 
 from .stateful import StatefulLayer, TrainableArray
-from ...functional.surrogate import superspike_surrogate
+from ...functional.surrogate import superspike_surrogate, SpikeFn
 from chex import Array, PRNGKey
-
 
 
 class SimpleLIF(StatefulLayer):
@@ -33,13 +32,13 @@ class SimpleLIF(StatefulLayer):
     """
     decay_constants: Union[Sequence[float], Array, TrainableArray] 
     threshold: float = static_field()
-    spike_fn: Callable = static_field()
+    spike_fn: SpikeFn = static_field()
     stop_reset_grad: bool = static_field()
     reset_val: Optional[float] = static_field()
 
     def __init__(self,
                 decay_constants: TrainableArray,
-                spike_fn: Callable = superspike_surrogate(10.),
+                spike_fn: SpikeFn = superspike_surrogate(10.),
                 threshold: float = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
@@ -83,47 +82,47 @@ class SimpleLIF(StatefulLayer):
         state = [mem_pot,  spike_output]
         return [state, spike_output]
 
+
 class LIF(StatefulLayer):
     """
     TODO improve docstring
     Implementation of a leaky integrate-and-fire neuron with
     synaptic currents. Requires two decay constants to describe
     decay of membrane potential and synaptic current.
+
+    Arguments:
+        `shape`: Shape of the neuron layer.
+        `decay_constants`: Decay constants for the LIF neuron.
+            - Index 0 describes the decay constant of the membrane potential,
+            - Index 1 describes the decay constant of the synaptic current.
+        `spike_fn`: Spike treshold function with custom surrogate gradient.
+        `threshold`: Spike threshold for membrane potential. Defaults to 1.
+        `reset_val`: Reset value after a spike has been emitted. 
+                        Defaults to None.
+        `stop_reset_grad`: Boolean to control if the gradient is propagated
+                            through the refectory potential.
+        `init_fn`: Function to initialize the state of the spiking neurons.
+                    Defaults to initialization with zeros if 
+                    nothing else is provided.
+        `shape` if given, the parameters will be expanded into vectors and initialized accordingly
+        `key` used to initialize the parameters when shape is not None
     """
     decay_constants: TrainableArray
     threshold: float = static_field()
-    spike_fn: Callable = static_field()
+    spike_fn: SpikeFn = static_field()
     reset_val: float = static_field()
     stop_reset_grad: bool = static_field()
 
     def __init__(self, 
                 decay_constants: Union[Sequence[float], Array],
-                spike_fn: Callable = superspike_surrogate(10.),
+                spike_fn: SpikeFn = superspike_surrogate(10.),
                 threshold: float = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
                 init_fn: Optional[Callable] = None,
                 shape: Union[Sequence[int], int, None] = None,
-                key: PRNGKey = jax.random.PRNGKey(0)) -> None:
-        """
-        Arguments:
-            - `shape`: Shape of the neuron layer.
-            - `decay_constants`: Decay constants for the LIF neuron.
-                - Index 0 describes the decay constant of the membrane potential,
-                - Index 1 describes the decay constant of the synaptic current.
-            - `spike_fn`: Spike treshold function with custom surrogate gradient.
-            - `threshold`: Spike threshold for membrane potential. Defaults to 1.
-            - `reset_val`: Reset value after a spike has been emitted. 
-                            Defaults to None.
-            - `stop_reset_grad`: Boolean to control if the gradient is propagated
-                                through the refectory potential.
-            - `init_fn`: Function to initialize the state of the spiking neurons.
-                        Defaults to initialization with zeros if 
-                        nothing else is provided.
-            - 'shape' if given, the parameters will be expanded into vectors and initialized accordingly
-            - 'key' used to initialize the parameters when shape is not None
-        """
-
+                key: Optional[PRNGKey] = None) -> None:
+        
         super().__init__(init_fn)
         # TODO assert for numerical stability 0.999 leads to errors...
         self.decay_constants = decay_constants
@@ -170,6 +169,7 @@ class LIF(StatefulLayer):
         state = [mem_pot, syn_curr, spike_output]
         return [state, spike_output]
     
+
 class LIFSoftReset(LIF):
     """
     Similar to LIF but reset is additive (relative) rather than absolute:
@@ -203,14 +203,30 @@ class LIFSoftReset(LIF):
         state = [mem_pot, syn_curr, spike_output]
         return [state, spike_output]
 
+
 class AdaptiveLIF(StatefulLayer):
     """
     Implementation of a adaptive exponential leaky integrate-and-fire neuron
     as presented in https://neuronaldynamics.epfl.ch/online/Ch6.S1.html.
+
+    Arguments:
+
+        `decay_constants`: Decay constants for the adaptive LIF neuron.
+            - Index 0 describes the decay constant of the membrane potential,
+            - Index 1 describes the decay constant of the synaptic current.
+        `spike_fn`: Spike treshold function with custom surrogate gradient.
+        `threshold`: Spike threshold for membrane potential. Defaults to 1.
+        `reset_val`: Reset value after a spike has been emitted. Defaults to None.
+        `stop_reset_grad`: Boolean to control if the gradient is propagated
+            through the refectory potential.
+        `init_fn`: Function to initialize the initial state of the spiking neurons.
+            Defaults to initialization with zeros if nothing else is provided.
+        `shape` if given, the parameters will be expanded into vectors and initialized accordingly
+        `key` used to initialize the parameters when shape is not None
     """
     decay_constants: TrainableArray
     threshold: float = static_field()
-    spike_fn: Callable = static_field()
+    spike_fn: SpikeFn = static_field()
     ada_step_val: TrainableArray 
     ada_decay_constant: TrainableArray 
     ada_coupling_var: TrainableArray 
@@ -222,27 +238,15 @@ class AdaptiveLIF(StatefulLayer):
                 ada_decay_constant: float = [.8] ,
                 ada_step_val: float = [1.0],
                 ada_coupling_var: float = [.5],
-                spike_fn: Callable = superspike_surrogate(10.),
+                spike_fn: SpikeFn = superspike_surrogate(10.),
                 threshold: float = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
                 init_fn: Optional[Callable] = None,
                 shape: Union[Sequence[int],int, None] = None,
-                key: PRNGKey = jax.random.PRNGKey(0)) -> None:
-        """**Arguments**:
+                key: Optional[PRNGKey] = None) -> None:
+        """
 
-        - `decay_constants`: Decay constants for the adaptive LIF neuron.
-            - Index 0 describes the decay constant of the membrane potential,
-            - Index 1 describes the decay constant of the synaptic current.
-        - `spike_fn`: Spike treshold function with custom surrogate gradient.
-        - `threshold`: Spike threshold for membrane potential. Defaults to 1.
-        - `reset_val`: Reset value after a spike has been emitted. Defaults to None.
-        - `stop_reset_grad`: Boolean to control if the gradient is propagated
-            through the refectory potential.
-        - `init_fn`: Function to initialize the initial state of the spiking neurons.
-            Defaults to initialization with zeros if nothing else is provided.
-        - 'shape' if given, the parameters will be expanded into vectors and initialized accordingly
-        - 'key' used to initialize the parameters when shape is not None
         """
 
         super().__init__(init_fn)
