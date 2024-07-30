@@ -5,5 +5,5 @@ from .layers.li import LI
 from .layers.lif import SimpleLIF, LIF, LIFSoftReset, AdaptiveLIF
 from .layers.iaf import SimpleIAF, IAF
 from .layers.flatten import Flatten
-from .layers.maxpool import SpikingMaxPool2d
+from .layers.pooling import SpikingMaxPool2d
 

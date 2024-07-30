@@ -14,6 +14,7 @@ from jax.tree_util import tree_map
 def predict(model, state, data, key):
     return model(state, data, key=key)
 
+
 @eqx.filter_jit
 def calc_accuracy(model, state, data, target, key):
     keys = jrand.split(key, data.shape[0])
@@ -22,6 +23,7 @@ def calc_accuracy(model, state, data, target, key):
     # sum over spikes
     pred = tree_map(lambda x: jnp.sum(x, axis=1), out[-1]).argmax(axis=-1)
     return (pred == target).mean()
+
 
 class DVSGestures(object):
     def __init__(self, 

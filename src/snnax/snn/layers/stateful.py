@@ -7,6 +7,9 @@ from equinox import static_field
 from chex import Array, PRNGKey
 
 
+StateShape = Union[Sequence[int], int]
+
+
 class TrainableArray(eqx.Module):
     data: Array
     requires_grad: bool
@@ -74,5 +77,4 @@ class RequiresStateLayer(eqx.Module):
         output_passed_to_next_layer: [Array]
         """
         raise NotImplementedError
-
 
