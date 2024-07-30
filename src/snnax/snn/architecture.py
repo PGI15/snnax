@@ -170,7 +170,7 @@ class StatefulModel(eqx.Module):
         `graph_structure` (GraphStructure): GraphStructure object to specify 
             network connectivity.
         `layers` (Sequence[eqx.Module]): Computational building blocks of the model.
-        `forward_fn` (Callable): Evaluation procedure/loop for the model. 
+        `forward_fn` (ForwardFn): Evaluation procedure/loop for the model. 
                         Defaults to backprop through time using lax.scan().
     Output:
     """
@@ -181,12 +181,14 @@ class StatefulModel(eqx.Module):
     def __init__(self, 
                 graph_structure: GraphStructure, 
                 layers: Sequence[eqx.Module],
-                forward_fn: ForwardFn = default_forward_fn) -> None:
+                forward_fn: ForwardFn = default_forward_fn,
+                loop_fn: Callable = lax.scan) -> None:
         super().__init__()
 
         self.graph_structure = graph_structure
         self.layers = layers
         self.forward_fn = forward_fn
+        self.loop_fn = loop_fn
 
         assert len(layers) == self.graph_structure.num_layers
         assert len(self.graph_structure.input_connectivity) == self.graph_structure.num_layers
@@ -261,17 +263,17 @@ class StatefulModel(eqx.Module):
                                 key)       
         
         if burnin > 0:
-            new_states, new_outs = lax.scan(forward_fn, 
-                                            input_states, 
-                                            input_batch[:burnin])
+            new_states, new_outs = self.loop_fn(forward_fn, 
+                                                input_states, 
+                                                input_batch[:burnin])
 
             # Performes the actual BPTT when differentiated
-            new_states, new_outs = lax.scan(forward_fn, 
-                                            jax.lax.stop_gradient(new_states), 
-                                            input_batch[burnin:])
+            new_states, new_outs = self.loop_fn(forward_fn, 
+                                                jax.lax.stop_gradient(new_states), 
+                                                input_batch[burnin:])
         else:
-            new_states, new_outs = lax.scan(forward_fn, 
-                                            input_states, 
-                                            input_batch)
+            new_states, new_outs = self.loop_fn(forward_fn, 
+                                                input_states, 
+                                                input_batch)
         return new_states, new_outs         
 
