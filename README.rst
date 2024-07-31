@@ -28,7 +28,7 @@
 ..     :target: https://pyscaffold.org/
 
 
-.. image:: snnax.svg
+.. image:: logo/snnax.svg
    :width: 200px
    :height: 100px
    :scale: 50 %
