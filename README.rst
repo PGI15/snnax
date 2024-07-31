@@ -20,6 +20,7 @@
         :alt: Twitter
         :target: https://twitter.com/snnax
 
+
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
      :alt: Project generated with PyScaffold
      :target: https://pyscaffold.org/
@@ -31,6 +32,7 @@
 .. image:: https://img.shields.io/pypi/v/snnax.svg
         :alt: PyPI-Server
         :target: https://pypi.org/project/snnax/
+
 
 .. image:: logo/snnax.svg
    :width: 200px
