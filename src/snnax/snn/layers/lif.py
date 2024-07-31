@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union, Tuple
+from typing import Callable, Optional, Sequence, Union
 
 import jax
 import jax.nn as jnn
@@ -6,9 +6,7 @@ import jax.lax as lax
 import jax.numpy as jnp
 from jax.lax import stop_gradient, clamp
 
-from equinox import static_field
-
-from .stateful import StatefulLayer, TrainableArray, StateShape
+from .stateful import StatefulLayer, StateShape, default_init_fn
 from ...functional.surrogate import superspike_surrogate, SpikeFn
 from chex import Array, PRNGKey
 
@@ -20,50 +18,48 @@ class SimpleLIF(StatefulLayer):
     Requires one decay constant to simulate membrane potential leak.
     
     Arguments:
-        `decay_constants`: Decay constant of the simple LIF neuron.
-        `spike_fn`: Spike treshold function with custom surrogate gradient.
-        `threshold`: Spike threshold for membrane potential. Defaults to 1.
-        `reset_val`: Reset value after a spike has been emitted.
-        `stop_reset_grad`: Boolean to control if the gradient is propagated
+        `decay_constants` (Array): Decay constant of the simple LIF neuron.
+        `spike_fn` (Array): Spike treshold function with custom surrogate gradient.
+        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Array): Reset value after a spike has been emitted.
+        `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
                         through the refectory potential.
-        `init_fn`: Function to initialize the initial state of the 
+        `init_fn` (Callable): Function to initialize the initial state of the 
                     spiking neurons. Defaults to initialization with zeros 
                     if nothing else is provided.
-        `shape`: if given, the parameters will be expanded into vectors and initialized accordingly
+        `shape` (StateShape): if given, the parameters will be expanded into vectors and initialized accordingly
         `key` (PRNGKey): used to initialize the parameters when shape is not None
     """
-    decay_constants: Union[Sequence[float], Array, TrainableArray] 
-    threshold: float = static_field()
-    spike_fn: SpikeFn = static_field()
-    stop_reset_grad: bool = static_field()
-    reset_val: Optional[float] = static_field()
+    decay_constants: Union[Sequence[float], Array] 
+    threshold: Array
+    spike_fn: SpikeFn
+    stop_reset_grad: bool
+    reset_val: Optional[Array]
 
     def __init__(self,
-                decay_constants: TrainableArray,
+                decay_constants: Array,
                 spike_fn: SpikeFn = superspike_surrogate(10.),
-                threshold: float = 1.,
+                threshold: Array = 1.,
                 stop_reset_grad: bool = True,
-                reset_val: Optional[float] = None,
-                init_fn: Optional[Callable] = None,
+                reset_val: Optional[Array] = None,
+                init_fn: Optional[Callable] = default_init_fn,
                 shape: Optional[StateShape] = None,
                 key: Optional[PRNGKey] = None,
                 **kwargs) -> None:
 
-        super().__init__(init_fn)
+        super().__init__(init_fn, shape)
         self.threshold = threshold
-        self.decay_constants = decay_constants
         self.spike_fn = spike_fn
         self.reset_val = reset_val
         self.stop_reset_grad = stop_reset_grad
-
         self.decay_constants = self.init_parameters(decay_constants, shape)
 
     def __call__(self, 
                 state: Array, 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> Sequence[Array]:
-        alpha = lax.clamp(0.5, self.decay_constants.data[0], 1.0)
-        mem_pot = state[0]
+        alpha = lax.clamp(0.5, self.decay_constants[0], 1.0)
+        mem_pot, spike_output = state
         mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input
         spike_output = self.spike_fn(mem_pot-self.threshold)
 
@@ -81,7 +77,6 @@ class SimpleLIF(StatefulLayer):
         return [state, spike_output]
 
 
-
 class LIF(StatefulLayer):
     """
     TODO improve docstring
@@ -90,40 +85,37 @@ class LIF(StatefulLayer):
     decay of membrane potential and synaptic current.
 
     Arguments:
-        `shape`: Shape of the neuron layer.
-        `decay_constants`: Decay constants for the LIF neuron.
-            - Index 0 describes the decay constant of the membrane potential,
-            - Index 1 describes the decay constant of the synaptic current.
-        `spike_fn`: Spike treshold function with custom surrogate gradient.
-        `threshold`: Spike threshold for membrane potential. Defaults to 1.
-        `reset_val`: Reset value after a spike has been emitted. 
+
+        `decay_constants` (Array): Decay constants for the LIF neuron.
+        `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient.
+        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Array): Reset value after a spike has been emitted. 
                         Defaults to None.
-        `stop_reset_grad`: Boolean to control if the gradient is propagated
+        `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
                             through the refectory potential.
-        `init_fn`: Function to initialize the state of the spiking neurons.
+        `init_fn` (Callable): Function to initialize the state of the spiking neurons.
                     Defaults to initialization with zeros if 
                     nothing else is provided.
-        `shape` if given, the parameters will be expanded into vectors and initialized accordingly
-        `key` used to initialize the parameters when shape is not None
+        `shape` (Sequence[int]): Shape of the neuron layer.
+        `key` (PRNGKey): Random number generator key for initialization of parameters.
     """
-    decay_constants: TrainableArray
-    threshold: float = static_field()
-    spike_fn: Callable = static_field()
-    reset_val: float = static_field()
-    stop_reset_grad: bool = static_field()
+    decay_constants: Array
+    threshold: Array
+    spike_fn: SpikeFn
+    reset_val: Array
+    stop_reset_grad: bool
 
     def __init__(self, 
                 decay_constants: Union[Sequence[float], Array],
-                spike_fn: Callable = superspike_surrogate(10.),
-                threshold: float = 1.,
+                spike_fn: SpikeFn = superspike_surrogate(10.),
+                threshold: Array = 1.,
                 stop_reset_grad: bool = True,
-                reset_val: Optional[float] = None,
-                init_fn: Optional[Callable] = None,
+                reset_val: Optional[Array] = None,
+                init_fn: Optional[Callable] = default_init_fn,
                 shape: Optional[StateShape] = None,
                 key: Optional[PRNGKey] = None) -> None:
 
-        super().__init__(init_fn)
-        self.decay_constants = decay_constants
+        super().__init__(init_fn, shape)
         self.threshold = threshold
         self.spike_fn = spike_fn
         self.reset_val = reset_val
@@ -131,7 +123,7 @@ class LIF(StatefulLayer):
         self.decay_constants = self.init_parameters(decay_constants, shape)
 
     def init_state(self, 
-                   shape: Union[int, Sequence[int]], 
+                   shape: StateShape, 
                    key: PRNGKey, 
                    *args, 
                    **kwargs) -> Sequence[Array]:
@@ -144,12 +136,11 @@ class LIF(StatefulLayer):
         init_state_spike_output = jnp.zeros(shape)
         return [init_state_mem_pot, init_state_syn_curr, init_state_spike_output]
 
-
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array,
                 *, key: Optional[PRNGKey] = None) -> Sequence[Array]:
-        mem_pot, syn_curr, spike_output = state[0], state[1], state[2]
+        mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
             reset_pot = mem_pot*spike_output 
@@ -157,14 +148,14 @@ class LIF(StatefulLayer):
             reset_pot = (mem_pot-self.reset_val)*spike_output 
 
         # Optionally stop gradient propagation through refectory potential       
-        refectory_potential = lax.stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
+        refectory_potential = stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
         mem_pot = mem_pot - refectory_potential
 
-        alpha = clamp(0.5, self.decay_constants.data[0], 1.0)
-        beta  = clamp(0.5, self.decay_constants.data[1], 1.0)
+        alpha = clamp(0.5, self.decay_constants[0], 1.0)
+        beta  = clamp(0.5, self.decay_constants[1], 1.0)
         
         mem_pot = alpha*mem_pot + (1.-alpha)*syn_curr
-        syn_curr = beta*syn_curr + (1-beta)*synaptic_input
+        syn_curr = beta*syn_curr + (1.-beta)*synaptic_input
 
         spike_output = self.spike_fn(mem_pot - self.threshold)
 
@@ -183,7 +174,7 @@ class LIFSoftReset(LIF):
                 state: Sequence[Array], 
                 synaptic_input: Array,
                 *, key: Optional[PRNGKey] = None) -> Sequence[Array]:
-        mem_pot, syn_curr, spike_output = state[0], state[1], state[2]
+        mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
             reset_pot = spike_output 
@@ -194,11 +185,11 @@ class LIFSoftReset(LIF):
         refr_pot = stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
         mem_pot = mem_pot - refr_pot
 
-        alpha = clamp(0.5, self.decay_constants.data[0], 1.0)
-        beta  = clamp(0.5, self.decay_constants.data[1], 1.0)
+        alpha = clamp(0.5, self.decay_constants[0], 1.0)
+        beta  = clamp(0.5, self.decay_constants[1], 1.0)
  
         mem_pot = alpha*mem_pot + (1.-alpha)*syn_curr
-        syn_curr = beta*syn_curr + (1-beta)*synaptic_input
+        syn_curr = beta*syn_curr + (1.-beta)*synaptic_input
 
         spike_output = self.spike_fn(mem_pot - self.threshold)
 
@@ -211,32 +202,26 @@ class AdaptiveLIF(StatefulLayer):
     Implementation of a adaptive exponential leaky integrate-and-fire neuron
     as presented in https://neuronaldynamics.epfl.ch/online/Ch6.S1.html.
     
-    Arguments:
-        - `shape` (StateShape): Shape of the neuron layer.
-        - `decay_constants`: Decay constants for the LIF neuron.
-            - Index 0 describes the decay constant of the membrane potential,
-            - Index 1 describes the decay constant of the synaptic current.
-        - `spike_fn`: Spike treshold function with custom surrogate gradient.
-        - `threshold`: Spike threshold for membrane potential. Defaults to 1.
-        - `reset_val`: Reset value after a spike has been emitted. 
+    Args:
+        `decay_constants` (Array): Decay constants for the LIF neuron.
+        `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient.
+        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Array): Reset value after a spike has been emitted. 
                         Defaults to None.
-        - `stop_reset_grad`: Boolean to control if the gradient is propagated
-                            through the refectory potential.
-        - `init_fn`: Function to initialize the state of the spiking neurons.
-                    Defaults to initialization with zeros if 
-                    nothing else is provided.
-        - 'shape' if given, the parameters will be expanded into vectors and 
-            initialized accordingly
-        - 'key' used to initialize the parameters when shape is not None
+        `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
+                        through the refectory potential.
+        `init_fn` (Callable): Function to initialize the state of the spiking neurons.
+            Defaults to initialization with zeros if nothing else is provided.
+        `shape` (StateShape): Shape of the neuron layer.
+        `key` (PRNGKey): Random number generator key for initialization of parameters.
     """
-    decay_constants: TrainableArray
-    threshold: float = static_field()
-    spike_fn: Callable = static_field()
-    ada_step_val: TrainableArray 
-    ada_decay_constant: TrainableArray 
-    ada_coupling_var: TrainableArray 
-    stop_reset_grad: bool = static_field()
-    reset_val: Optional[float] = static_field()
+    decay_constants: Array
+    threshold: Array
+    ada_step_val: Array 
+    ada_decay_constant: Array 
+    ada_coupling_var: Array 
+    stop_reset_grad: bool
+    reset_val: Optional[Array]
 
     def __init__(self,
                 decay_constants: float,
@@ -257,7 +242,6 @@ class AdaptiveLIF(StatefulLayer):
         self.reset_val = reset_val 
         self.stop_reset_grad = stop_reset_grad
 
-
         self.decay_constants = self.init_parameters(decay_constants, shape)
         self.ada_decay_constant = self.init_parameters(ada_decay_constant, shape)
         self.ada_step_val = self.init_parameters(ada_step_val, shape)
@@ -275,14 +259,14 @@ class AdaptiveLIF(StatefulLayer):
 
     def __call__(self, 
                 state: Sequence[Array], 
-                synaptic_input: Array,  
+                synaptic_input: Array, 
                 *, key: Optional[PRNGKey] = None) -> Sequence[Array]:
-        mem_pot, ada_var = state[0], state[1]
+        mem_pot, ada_var = state
 
-        alpha = clamp(0.5,self.decay_constants.data[0],1.)
-        beta = clamp(0.5, self.ada_decay_constant.data[0], 1.) 
-        a = clamp(-1.,self.ada_coupling_var.data[0], 1.)
-        b = clamp(0.,self.ada_step_val.data[0], 2.)
+        alpha = clamp(0.5,self.decay_constants[0],1.)
+        beta = clamp(0.5, self.ada_decay_constant[0], 1.) 
+        a = clamp(-1.,self.ada_coupling_var[0], 1.)
+        b = clamp(0.,self.ada_step_val[0], 2.)
 
         # Calculation of the membrane potential
         mem_pot = alpha*mem_pot + (1.-alpha)*(synaptic_input+ada_var)
@@ -290,7 +274,7 @@ class AdaptiveLIF(StatefulLayer):
         
         # Calculation of the adaptive part of the dynamics
         ada_var_new = (1.-beta)*a * mem_pot \
-                    + beta*ada_var - b*lax.stop_gradient(spike_output)
+                    + beta*ada_var - b*stop_gradient(spike_output)
 
         if self.reset_val is None:
             reset_pot = mem_pot*spike_output

@@ -1,16 +1,15 @@
-import jax
-import jax.lax as lax
-import jax.numpy as jnp
-import jax.random as jrand
+from typing import Callable, Optional, Sequence, Union
 
-from .stateful import StatefulLayer
-from typing import Sequence, Optional, Callable, Union
-from equinox import static_field
-from ...functional.surrogate import superspike_surrogate
+import jax
+import jax.numpy as jnp
+from jax.lax import clamp, stop_gradient
+
 from chex import PRNGKey, Array
 
+from .stateful import StatefulLayer
+from ...functional.surrogate import superspike_surrogate, SpikeFn
 
-# TODO callable is missing
+
 class SigmaDelta(StatefulLayer):
     """
     Implementation of a Sigma-Delta neuron. A Sigma-Delta neuron consists of a Sigma-Decoder
@@ -43,12 +42,13 @@ class SigmaDelta(StatefulLayer):
         `spike_fn` (Callable): desc
         `init_fn` (Callable): desc
     """
-    threshold: float = static_field()
-    spike_fn: Callable = static_field()
+    threshold: Array
+    spike_fn: SpikeFn
     
-    def __init__(self, threshold: float = 1., 
-                 spike_fn: Callable = superspike_surrogate(10.),
-                 init_fn: Optional[Callable]=None):
+    def __init__(self, 
+                threshold: Array = 1., 
+                spike_fn: Callable = superspike_surrogate(10.),
+                init_fn: Optional[Callable]=None):
 
         super().__init__(init_fn)
         self.threshold = threshold
@@ -56,7 +56,7 @@ class SigmaDelta(StatefulLayer):
 
     def init_state(self, 
                    shape: Union[int, Sequence[int]], 
-                   key: PRNGKey, 
+                   key: Optional[PRNGKey] = None, 
                    *args, 
                    **kwargs) -> Sequence[Array]:
         sigma = jnp.zeros(shape, dtype=jnp.float32)
@@ -67,11 +67,7 @@ class SigmaDelta(StatefulLayer):
         return [sigma, act_new, act, residue, s_out]
 
     def sigma_decoder(self, state: Sequence[Array], synaptic_input: Array):
-        sigma = state[0]
-        act_new = state[1]
-        act = state[2]
-        residue = state[3]
-        s_out = state[4]
+        sigma, act_new, act, residue, s_out = state
 
         sigma += synaptic_input
         act_new = sigma
@@ -79,11 +75,7 @@ class SigmaDelta(StatefulLayer):
         return [sigma, act_new, act, residue, s_out]
     
     def delta_encoder(self, state: Sequence[Array]):
-        sigma = state[0]
-        act_new = state[1]
-        act = state[2]
-        residue = state[3]
-        s_out = state[4]
+        sigma, act_new, act, residue, s_out = state
 
         delta = act_new - act + residue
         s_out = self.spike_fn(delta - self.threshold)

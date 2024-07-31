@@ -65,6 +65,9 @@ class TestArchitecture(unittest.TestCase):
         self.assertListEqual(graph_struct.input_layer_ids, [[0], [], [], [], [], []])
         self.assertListEqual(graph_struct.input_connectivity, [[], [0], [1], [2], [3], [4]])
 
+    def test_compound_layer(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

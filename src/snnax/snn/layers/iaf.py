@@ -1,13 +1,11 @@
 from typing import Sequence, Union, Callable, Optional
 
 import jax
-import jax.lax as lax
 import jax.numpy as jnp
-
-from equinox import static_field
+from jax.lax import stop_gradient, clamp
 
 from chex import Array, PRNGKey
-from .stateful import StatefulLayer
+from .stateful import StatefulLayer, default_init_fn, StateShape
 from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 
@@ -19,39 +17,39 @@ class SimpleIAF(StatefulLayer):
     Requires one constant to simulate constant membrane potential leak.
 
     Arguments:
-
-        `leak` (float): Describes the constant leak of the membrane potential.
+        `leak` (Array): Describes the constant leak of the membrane potential.
             Defaults to zero, i.e. no leak.
-        `threshold` (float): Spike threshold for membrane potential. Defaults to 1.
+        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
         `spike_fn` (SpikeFn): Spike treshold function with custom surrogate 
             gradient.
         `stop_reset_grad` (bool): Boolean to control if the gradient is 
             propagated through the refectory potential.
-        `reset_val` (float): Reset value of the membrane potential after a spike 
+        `reset_val` (Array): Reset value of the membrane potential after a spike 
             has been emitted. Defaults to None.
-        `init_fn`: Function to initialize the state of the spiking neurons.
+        `init_fn` (Callable): Function to initialize the state of the spiking neurons.
             Defaults to initialization with zeros if nothing else is provided.
     """
-    leak: float = static_field()
-    threshold: float = static_field()
-    spike_fn: SpikeFn = static_field()
-    stop_reset_grad: bool = static_field()
-    reset_val: Optional[float] = static_field()
+    leak: Array
+    threshold: Array
+    spike_fn: SpikeFn
+    stop_reset_grad: bool
+    reset_val: Optional[Array]
 
     def __init__(self,
-                leak: float = 0.,
-                threshold: float = 1.,
+                leak: Array = 0.,
+                threshold: Array = 1.,
                 spike_fn: SpikeFn = superspike_surrogate(10.), 
                 stop_reset_grad: bool = True,
-                reset_val: Optional[float] = None,
-                init_fn: Optional[Callable] = None) -> None:
-        super().__init__(init_fn)
+                reset_val: Optional[Array] = None,
+                shape: Optional[StateShape] = None,
+                init_fn: Optional[Callable] = default_init_fn) -> None:
+        super().__init__(init_fn, shape)
         
-        # TODO assert for numerical stability 0.999 leads to errors...
         self.threshold = threshold
-        self.leak = leak
         self.spike_fn = spike_fn
         self.stop_reset_grad = stop_reset_grad
+        self.shape = shape
+        self.leak = self.init_parameters(leak, shape)
         self.reset_val = reset_val if reset_val is not None else None
 
     def __call__(self, 
@@ -59,7 +57,7 @@ class SimpleIAF(StatefulLayer):
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> Sequence[Array]:
 
-        mem_pot = state
+        mem_pot, spike_output = state
         mem_pot = (mem_pot-self.leak) + synaptic_input
         spike_output = self.spike_fn(mem_pot-self.threshold)
         
@@ -68,84 +66,83 @@ class SimpleIAF(StatefulLayer):
         else:
             reset_pot = self.reset_val*spike_output
         # optionally stop gradient propagation through refectory potential       
-        refectory_pot = lax.stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
+        refectory_pot = stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
         mem_pot = mem_pot - refectory_pot
 
-        output = spike_output
-        state = mem_pot
-        return state, output
+        state = [mem_pot, spike_output]
+        return state, spike_output
 
 
 class IAF(StatefulLayer):
     """
     Implementation of an integrate-and-fire neuron with a constant leak
     or no leak at all. However, it has no leak by default.
+
+    Arguments:
+        `decay_constants`: Decay constants for the IAF neuron.
+        `spike_fn`: Spike treshold function with custom surrogate gradient.
+        `leak`: Describes the constant leak of the membrane potential.
+            Defaults to zero, i.e. no leak.
+        `threshold`: Spike threshold for membrane potential. 
+                        Defaults to 1.
+        `reset_val`: Reset value after a spike has been emitted. 
+                        Defaults to None.
+        `stop_reset_grad`: Boolean to control if the gradient is propagated
+                            through the refectory potential.
+        `init_fn`: Function to initialize the state of the spiking neurons.
+                    Defaults to initialization with zeros if nothing 
+                    else is provided.
     """
-    decay_constants: Union[Sequence[float], Array] = static_field()
-    leak: float = static_field()
-    threshold: float = static_field()
-    spike_fn: Callable = static_field()
-    stop_reset_grad: bool = static_field()
-    reset_val: Optional[float] = static_field()
+    decay_constants: Union[Sequence[float], Array]
+    leak: Array
+    threshold: Array
+    spike_fn: SpikeFn
+    stop_reset_grad: bool
+    reset_val: Optional[Array]
 
     def __init__(self,
                 decay_constants: Union[Sequence[float], Array],
-                leak: float = 0.,
-                threshold: float = 1.,
+                leak: Array = 0.,
+                threshold: Array = 1.,
                 spike_fn: Callable = superspike_surrogate(10.),
                 stop_reset_grad: bool = True,
-                reset_val: Optional[float] = None,
-                init_fn: Optional[Callable] = None) -> None:
-        """
-        Arguments:
-            - `decay_constants`: Decay constants for the IAF neuron.
-                - Index 0 describes the decay constant of the membrane potential,
-                - Index 1 describes the decay constant of the synaptic current.
-            - `spike_fn`: Spike treshold function with custom surrogate gradient.
-            - `leak`: Describes the constant leak of the membrane potential.
-                Defaults to zero, i.e. no leak.
-            - `threshold`: Spike threshold for membrane potential. 
-                            Defaults to 1.
-            - `reset_val`: Reset value after a spike has been emitted. 
-                            Defaults to None.
-            - `stop_reset_grad`: Boolean to control if the gradient is propagated
-                                through the refectory potential.
-            - `init_fn`: Function to initialize the state of the spiking neurons.
-                        Defaults to initialization with zeros if nothing 
-                        else is provided.
-        """
-
-        super().__init__(init_fn)
+                reset_val: Optional[Array] = None,
+                init_fn: Optional[Callable] = default_init_fn,
+                shape: Optional[StateShape] = None) -> None:
+        super().__init__(init_fn, shape)
         
         # TODO assert for numerical stability 0.999 leads to errors...
         self.threshold = threshold
-        self.leak = leak
-        self.decay_constants = decay_constants
+        self.leak = self.init_parameters(leak, shape)
+        self.decay_constants = self.init_parameters(decay_constants, shape)
         self.spike_fn = spike_fn
         self.reset_val = reset_val if reset_val is not None else None
         self.stop_reset_grad = stop_reset_grad
 
     def init_state(self, 
-                shape: Union[int, Sequence[int]], 
-                key: PRNGKey, 
-                *args, 
-                **kwargs):
+                   shape: StateShape, 
+                   key: PRNGKey, 
+                   *args, 
+                   **kwargs) -> Sequence[Array]:
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
-        init_state_syn_curr = jnp.zeros(shape)
-        return jnp.stack([init_state_mem_pot, init_state_syn_curr])
+        
+        # The synaptic currents are initialized as zeros.
+        init_state_syn_curr = jnp.zeros(shape) 
+        
+         # The spiking outputs are initialized as zeros
+        init_state_spike_output = jnp.zeros(shape)
+        return [init_state_mem_pot, init_state_syn_curr, init_state_spike_output]
 
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> Sequence[Array]:
-        mem_pot, syn_curr = state[0], state[1]
+        mem_pot, syn_curr, spiking_output = state
 
-        alpha = self.decay_constants[0]
-        beta = self.decay_constants[1]
+        beta  = clamp(0.5, self.decay_constants[0], 1.0)
         
-        mem_pot = (mem_pot - self.leak) + (1. - alpha)*syn_curr
-        # TODO Here the (1. - beta) seems to work fine
-        syn_curr = beta*syn_curr + (1. - beta)*synaptic_input 
+        mem_pot = (mem_pot - self.leak) + syn_curr
+        syn_curr = beta*syn_curr + (1.-beta)*synaptic_input 
         spike_output = self.spike_fn(mem_pot - self.threshold)
         
         if self.reset_val is None:
@@ -154,9 +151,9 @@ class IAF(StatefulLayer):
             reset_pot = self.reset_val*spike_output
             
         # optionally stop gradient propagation through refactory potential       
-        refectory_pot = lax.stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
+        refectory_pot = stop_gradient(reset_pot) if self.stop_reset_grad else reset_pot
         mem_pot = mem_pot - refectory_pot
 
-        state = jnp.stack([mem_pot, syn_curr])
+        state = [mem_pot, syn_curr, spike_output]
         return state, spike_output
 

@@ -1,15 +1,13 @@
-from typing import Sequence, Union, Callable, Optional, Tuple
+from typing import Callable, Optional, Sequence, Union
 import jax
 import jax.lax as lax
 import jax.numpy as jnp
-import jax.random as jrand
 
 import equinox as eqx
-from equinox import static_field
 from chex import Array, PRNGKey
 
-from .stateful import StatefulLayer, TrainableArray
-from ...functional.surrogate import superspike_surrogate
+from .stateful import StatefulLayer, StateShape
+from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 class SRM(StatefulLayer):
     """
@@ -31,26 +29,26 @@ class SRM(StatefulLayer):
             Defaults to initialization with zeros if nothing else is provided.
     """
     layer: eqx.Module 
-    decay_constants: Union[Sequence[float], Array, TrainableArray]     
-    r_decay_constants: Union[Sequence[float], Array, TrainableArray]     
-    threshold: Union[float, Array] = static_field()
-    spike_fn: Callable = static_field()
-    reset_val: Optional[Union[float, Array, TrainableArray]]
-    stop_reset_grad: bool = static_field()
+    decay_constants: Union[Sequence[float], Array]     
+    r_decay_constants: Union[Sequence[float], Array]     
+    threshold: Union[float, Array]
+    spike_fn: SpikeFn
+    reset_val: Optional[Union[float, Array]]
+    stop_reset_grad: bool
 
     def __init__(self, 
                 layer: eqx.Module, *,
-                decay_constants: Union[Sequence[float], Array, TrainableArray],
-                r_decay_constants: Union[Sequence[float], Array, TrainableArray] = [.9],
+                decay_constants: Union[Sequence[float], Array],
+                r_decay_constants: Union[Sequence[float], Array] = [.9],
                 spike_fn: Callable = superspike_surrogate(10.),
                 threshold: Union[float, Array] = 1.,
-                reset_val: Optional[Union[float, Array, TrainableArray]] = None,
+                reset_val: Optional[Union[float, Array]] = None,
                 stop_reset_grad: Optional[bool] = True,
                 init_fn: Optional[Callable] = None,
                 input_shape: Union[Sequence[int],int,None] = None,
-                shape: Union[Sequence[int],int,None] = None,
+                shape: Optional[StateShape] = None,
                 key: Optional[PRNGKey] = None) -> None:
-        super().__init__(init_fn)
+        super().__init__(init_fn, shape)
         # TODO assert for numerical stability 0.999 leads to errors...
         self.decay_constants = decay_constants
         self.threshold = threshold

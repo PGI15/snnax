@@ -8,7 +8,6 @@ import jax.numpy as jnp
 import jax.random as jrand
 
 import equinox as eqx
-from equinox import static_field
 
 from chex import Array, PRNGKey
 from jaxtyping import PyTree
@@ -174,9 +173,10 @@ class StatefulModel(eqx.Module):
                         Defaults to backprop through time using lax.scan().
     Output:
     """
-    graph_structure: GraphStructure = static_field()
+    graph_structure: GraphStructure
     layers: Sequence[eqx.Module]
-    forward_fn: ForwardFn = static_field()
+    forward_fn: ForwardFn
+    loop_fn: Callable
 
     def __init__(self, 
                 graph_structure: GraphStructure, 
@@ -195,7 +195,7 @@ class StatefulModel(eqx.Module):
 
     def init_state(self, 
                    in_shape: Union[Sequence[Tuple[int]], Tuple[int]], 
-                   key: Optional[PRNGKey]) -> Sequence[Array]:
+                   key: Optional[PRNGKey] = None) -> Sequence[Array]:
         """
         Init function that recursively calls the init functions of the stateful
         layers. Non-stateful layers are initialized as None and their output
