@@ -9,13 +9,11 @@ import equinox.nn as nn
 
 import snnax as snx
 import snnax.snn as snn
-from snnax.snn.architecture import (default_forward_fn, 
-                                    debug_forward_fn, 
-                                    delayed_forward_fn)
+from snnax.snn.architecture import default_forward_fn
 
 
 class TestArchitecture(unittest.TestCase):
-    def test_default_forward_fn(self):
+    def test_treshold(self):
         print("Testing default_forward_fn and gradient computation...")
         key = jrand.PRNGKey(42)
         keys = jrand.split(key, 4)
@@ -23,7 +21,7 @@ class TestArchitecture(unittest.TestCase):
 
         model = snn.Sequential(
             nn.Conv2d(3, 16, kernel_size=(3, 3), use_bias=False, key=keys[0]),
-            snn.LIF([.95, .85], shape=(16, 5, 5), key=keys[1]),
+            snn.LIF([.95, .85], threshold=jnp.ones(()), shape=(16, 5, 5), key=keys[1]),
 
             nn.Conv2d(16, 16, kernel_size=(3, 3), use_bias=False, key=keys[2]),
             snn.LIF([.95, .85], shape=(16, 3, 3), key=keys[3]),
@@ -45,15 +43,8 @@ class TestArchitecture(unittest.TestCase):
             return jnp.sum(out[-1])
 
         grads = eqx.filter_grad(dummy_loss_fn)(batched_model, states, input_spikes, key)
-
-        self.assertTrue(grads._fun.layers[0].weight.shape == (16, 3, 3, 3))
-        self.assertTrue(jnp.abs(grads._fun.layers[0].weight).sum() != 0)
-
-    def test_debug_forward_fn():
-        pass
-
-    def test_delayed_forward_fn():
-        pass
+        print(grads._fun.layers[1].threshold)
+        self.assertTrue(jnp.abs(grads._fun.layers[1].threshold).sum() != 0)
 
 
 if __name__ == '__main__':
