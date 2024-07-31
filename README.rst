@@ -199,4 +199,3 @@ You can find JAX itself under https://github.com/google/jax.
 Equinox is available under https://github.com/patrick-kidger/equinox.
 
 SPYX is another JAX library that is built on Flax https://github.com/kmheckel/spyx.
-
