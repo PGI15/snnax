@@ -27,7 +27,7 @@
 
 .. image:: https://readthedocs.org/projects/snnax/badge/?version=latest
         :alt: ReadTheDocs
-        :target: https://snnax.readthedocs.io/en/stable/
+        :target: https://pgi15.github.io/snnax/
 
 .. image:: logo/snnax.svg
    :width: 200px
