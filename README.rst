@@ -4,7 +4,6 @@
     .. image:: https://api.cirrus-ci.com/github/<USER>/snnax.svg?branch=main
         :alt: Built Status
         :target: https://cirrus-ci.com/github/<USER>/snnax
-    
     .. image:: https://img.shields.io/coveralls/github/<USER>/snnax/main.svg
         :alt: Coveralls
         :target: https://coveralls.io/r/<USER>/snnax
@@ -21,13 +20,17 @@
         :alt: Twitter
         :target: https://twitter.com/snnax
 
-.. .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-..     :alt: Project generated with PyScaffold
-..     :target: https://pyscaffold.org/
+.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
+     :alt: Project generated with PyScaffold
+     :target: https://pyscaffold.org/
 
 .. image:: https://readthedocs.org/projects/snnax/badge/?version=latest
         :alt: ReadTheDocs
         :target: https://pgi15.github.io/snnax/
+
+.. image:: https://img.shields.io/pypi/v/snnax.svg
+        :alt: PyPI-Server
+        :target: https://pypi.org/project/snnax/
 
 .. image:: logo/snnax.svg
    :width: 200px
