@@ -120,9 +120,9 @@ class CompoundLayer(StatefulLayer):
                    shape: StateShape,
                    key: Optional[PRNGKey] = None) -> Sequence[Array]:
         """
-        **Arguments**:
-        - `shape`: Shape of the input data
-        - `key`: JAX PRNGKey
+        Arguments:
+            `shape`: Shape of the input data
+            `key`: JAX PRNGKey
         """
         states = []
         outs = []           
@@ -223,6 +223,7 @@ class SequentialLocalFeedback(Sequential):
             input_connectivity = input_connectivity
         )
 
+        # TODO this is shown to be dead-end code. Fix linting or replace...
         if feedback_layers is None:
             for i, l in enumerate(layers):
                 if isinstance(l, CompoundLayer):

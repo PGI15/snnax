@@ -132,3 +132,4 @@ def apply_to_tree_leaf_bytype(pytree: PyTreeDef,
         )
 
     return tree_at(_identifier, pytree, replace_fn=replace_fn)
+

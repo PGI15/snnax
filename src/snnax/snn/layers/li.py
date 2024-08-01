@@ -1,4 +1,4 @@
-from typing import Sequence, Callable, Optional
+from typing import Callable, Optional
 
 from jax.lax import clamp
 
