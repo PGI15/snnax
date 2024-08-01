@@ -16,7 +16,7 @@ from chex import Array, PRNGKey
 class BatchNormLayer(eqx.Module):
 
     gamma: float
-    forget_weight: float = static_field()
+    forget_weight: float
     eps: float = static_field()
 
     def __init__(self, eps: Union[float, int], forget_weight: Union[float, int], gamma: Union[float, int] = 0.8):
@@ -31,7 +31,8 @@ class BatchNormLayer(eqx.Module):
             raise ValueError(f"Gamma value cannot be greater than 1 for the batch norm layer!")
         return 
 
-    def init_state(self, input_shape, key: Optional[PRNGKey] = None):   # initialize the shapes of moving_mean and moving_var
+    def init_state(self, input_shape, key: Optional[PRNGKey] = None):   
+        # initialize the shapes of moving_mean and moving_var
         return jnp.zeros(input_shape), jnp.zeros(input_shape)
     
     def __call__(self, input_data, moving_mean, moving_var, key: Optional[PRNGKey] = None):
