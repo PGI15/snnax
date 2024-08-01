@@ -43,12 +43,7 @@
 SNNAX is a lightweight library for implementing Spiking Neural Networks (SNNs) 
 is JAX. It leverages the excellent and intuitive 
 `equinox <https://docs.kidger.site/equinox/>`_.
-The core of SNNAX is a module that stacks layers of pre-defined or custom 
-defined SNNs and Equinox neural network modules, and providing the functions 
-to call them in a single `lax.scan` loop. 
-This mode of operation enables feedback loops across the layers of SNNs, 
-while leveraging GPU/TPU acceleration as much as possible.
-
+The full documentation can be found at https://pgi15.github.io/snnax/.
 
 
 Installation
@@ -66,7 +61,7 @@ Or you can install the latest version from GitHub using pip:
 
 .. code-block:: bash
 
-    pip install git+
+    pip install git+https://github.com/PGI15/snnax
 
 Requires Python 3.9+, JAX 0.4.13+ and Equinox 0.11.1+.
 
@@ -92,16 +87,18 @@ layers into a feed-forward architecture.
     import jax
     import jax.numpy as jnp
 
-    import equinox as eqx
+    import equinox.nn as nn
     import snnax.snn as snn
 
     import optax
 
-    model = snn.Sequential(eqx.Conv2D(2, 32, 7, 2, key=key1),
-                            snn.LIF((8, 8), [.9, .8], key=key2),
-                            snn.flatten(),
-                            eqx.Linear(64, 11, key=key3),
-                            snn.LIF(11, [.9, .8], key=key4))
+    model = snn.Sequential(
+        nn.Conv2D(2, 32, 7, 2, key=key1),
+        snn.LIF((8, 8), [.9, .8], key=key2),
+        snn.flatten(),
+        nn.Linear(64, 11, key=key3),
+        snn.LIF(11, [.9, .8], key=key4)
+    )
 
 
 Next, we simply define a loss function for a single sample and then use the 
@@ -155,27 +152,6 @@ using the `init_states` method of the `Sequential` class.
 
 Fully worked-out examples can be found in the `examples` directory.
 
-
-Design Principles
-=================
-
-This section gives a short overview about some of the key building blocks in 
-SNNAX and how they are implemented.
-
-Structure of a neuron layer
----------------------------
-
-All custom neuron layers inherit from the `snnax.StatefulLayer` class which is
-just a `eqx.Module` with some additional methods to handle the state of the
-neurons.
-
-
-
-
-How recurrence works in SNNAX
------------------------------
-
-
 Citation
 ========
 
@@ -196,6 +172,13 @@ JAX Ecosystem
 
 You can find JAX itself under https://github.com/google/jax.
 
-Equinox is available under https://github.com/patrick-kidger/equinox.
+`equinox`` is available under https://github.com/patrick-kidger/equinox.
 
-SPYX is another JAX library that is built on Flax https://github.com/kmheckel/spyx.
+
+Other JAX libraries for SNN training:
+- `spyx` is very fast and built on `haiku`:  https://github.com/kmheckel/spyx.
+- `slax` is very fast and built on `flax`:  https://github.com/kmheckel/spyx.
+- `rA9` is another library that we have not tested yet: https://github.com/MarkusAI/rA9
+- `jaxsnn` is a JAX-based library to train SNNs for deployment BrainScalesS2: https://github.com/electronicvisions/jaxsnn
+- `rockpool` is a JAX-based library to train SNNs for deployment on Xylo: https://rockpool.ai/index.html
+
