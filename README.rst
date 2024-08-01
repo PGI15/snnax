@@ -74,11 +74,11 @@ spiking neural network (SNN) simulator for deep learning. It is designed to
 be easy to use and flexible, allowing users to define their own SNN layers
 while the common deep learning layers are provided by Equinox.
 It is fully compatible with JAX and thus can fully leverage JAX' function
-transformation features like vectorization with `jax.vmap`, automatic 
+transformation features like vectorization with ``jax.vmap``, automatic 
 differentiationand JIT compilation with XLA.
 
 The following piece of source code demonstrates how to define a simple SNN in SNNAX:
-We can use the `snnax.snn.Sequential` class to stack layers of SNNs and Equinox 
+We can use the ``snnax.snn.Sequential`` class to stack layers of SNNs and Equinox 
 layers into a feed-forward architecture.
 
 
@@ -106,7 +106,7 @@ vectorization features of JAX to create a batched loss function.
 Note that the output of our model is a tuple of membrane potentials and spikes.
 The spike output is a list of spike trains for each layer of the SNN.
 For a feed-forward SNN, we can simply take the last element of the spike list, 
-i.e., `out_spikes[-1]`, and sum the spikes across time to get the spike count.
+i.e., ``out_spikes[-1]``, and sum the spikes across time to get the spike count.
 
 
 .. code-block:: python
@@ -131,7 +131,7 @@ i.e., `out_spikes[-1]`, and sum the spikes across time to get the spike count.
 
 Finally, we train the model by feeding our model the input spike trains
 and states. For this, we first have to initialize the states of the SNN
-using the `init_states` method of the `Sequential` class.
+using the ``init_states``` method of the ``Sequential`` class.
 
 
 .. code-block:: python
@@ -150,7 +150,7 @@ using the `init_states` method of the `Sequential` class.
         model = eqx.apply_updates(model, updates)
 
 
-Fully worked-out examples can be found in the `examples` directory.
+Fully worked-out examples can be found in the ``examples`` directory.
 
 Citation
 ========
@@ -172,13 +172,13 @@ JAX Ecosystem
 
 You can find JAX itself under https://github.com/google/jax.
 
-`equinox` is available under https://github.com/patrick-kidger/equinox.
+``equinox``` is available under https://github.com/patrick-kidger/equinox.
 
 Other JAX libraries for SNN training:
 
-- `spyx` is very fast and built on `haiku`:  https://github.com/kmheckel/spyx.
-- `slax` is very fast and built on `flax`:  https://github.com/kmheckel/spyx.
-- `rA9` is another library that we have not tested yet: https://github.com/MarkusAI/rA9
-- `jaxsnn` is a JAX-based library to train SNNs for deployment BrainScalesS2: https://github.com/electronicvisions/jaxsnn
-- `rockpool` is a JAX-based library to train SNNs for deployment on Xylo: https://rockpool.ai/index.html
+- ``spyx`` is very fast and built on ``haiku``:  https://github.com/kmheckel/spyx.
+- ``slax`` is very fast and built on ``flax``:  https://github.com/kmheckel/spyx.
+- ``rA9`` is another library that we have not tested yet: https://github.com/MarkusAI/rA9
+- ``jaxsnn`` is a JAX-based library to train SNNs for deployment BrainScalesS2: https://github.com/electronicvisions/jaxsnn
+- ``rockpool``` is a JAX-based library to train SNNs for deployment on Xylo: https://rockpool.ai/index.html
 
