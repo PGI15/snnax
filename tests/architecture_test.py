@@ -10,7 +10,6 @@ import equinox.nn as nn
 import snnax as snx
 import snnax.snn as snn
 from snnax.snn.architecture import (default_forward_fn, 
-                                    debug_forward_fn, 
                                     delayed_forward_fn)
 
 
