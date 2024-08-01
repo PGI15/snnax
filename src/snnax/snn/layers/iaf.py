@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from jax.lax import stop_gradient, clamp
 
 from chex import Array, PRNGKey
-from .stateful import StatefulLayer, default_init_fn, StateShape
+from .stateful import StatefulLayer, default_init_fn, StateShape, StatefulOutput
 from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 
@@ -55,7 +55,7 @@ class SimpleIAF(StatefulLayer):
     def __call__(self, 
                 state: Array, 
                 synaptic_input: Array, *, 
-                key: Optional[PRNGKey] = None) -> Sequence[Array]:
+                key: Optional[PRNGKey] = None) -> StatefulOutput:
 
         mem_pot, spike_output = state
         mem_pot = (mem_pot-self.leak) + synaptic_input
@@ -136,7 +136,7 @@ class IAF(StatefulLayer):
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array, *, 
-                key: Optional[PRNGKey] = None) -> Sequence[Array]:
+                key: Optional[PRNGKey] = None) -> StatefulOutput:
         mem_pot, syn_curr, spiking_output = state
 
         beta  = clamp(0.5, self.decay_constants[0], 1.0)

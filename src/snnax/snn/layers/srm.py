@@ -11,7 +11,8 @@ from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 class SRM(StatefulLayer):
     """
-    TODO
+    Implementation follows Gerstner et al.(1993) which can be found under the following link:
+    https://link.springer.com/article/10.1007/BF00199450
 
     Arguments:
         `input_shape`: Shape of the neuron layer.

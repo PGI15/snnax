@@ -3,7 +3,7 @@ from typing import Sequence, Callable, Optional
 from jax.lax import clamp
 
 from chex import Array, PRNGKey
-from .stateful import StatefulLayer, StateShape, default_init_fn
+from .stateful import StatefulLayer, StateShape, default_init_fn, StatefulOutput
 
 # TODO implement a version with synaptic current
 class SimpleLI(StatefulLayer):
@@ -31,7 +31,7 @@ class SimpleLI(StatefulLayer):
     def __call__(self, 
                 state: Array, 
                 synaptic_input: Array, *, 
-                key: Optional[PRNGKey] = None) -> Sequence[Array]:
+                key: Optional[PRNGKey] = None) -> StatefulOutput:
         alpha = clamp(0.5, self.decay_constants[0], 1.0)
         mem_pot = state[0]
         mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input

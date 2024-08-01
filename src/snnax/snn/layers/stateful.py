@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import jax.numpy as jnp
 
@@ -7,6 +7,8 @@ from chex import Array, PRNGKey
 
 
 StateShape = Union[Sequence[int], int]
+
+StatefulOutput = Tuple[Sequence[Array], Array]
 
 default_init_fn = lambda x, key, *args, **kwargs: jnp.zeros(x)
 

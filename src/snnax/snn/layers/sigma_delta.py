@@ -6,7 +6,7 @@ from jax.lax import clamp, stop_gradient
 
 from chex import PRNGKey, Array
 
-from .stateful import StatefulLayer
+from .stateful import StatefulLayer, StatefulOutput
 from ...functional.surrogate import superspike_surrogate, SpikeFn
 
 
@@ -87,7 +87,7 @@ class SigmaDelta(StatefulLayer):
   
     def __call__(self, state: Sequence[Array], 
                  synaptic_input: Array, 
-                 *, key: Optional[PRNGKey] = None) -> Sequence[Array]:
+                 *, key: Optional[PRNGKey] = None) -> StatefulOutput:
         state = self.sigma_decoder(state, synaptic_input)
         return self.delta_encoder(state)
 
