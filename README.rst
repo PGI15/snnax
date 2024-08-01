@@ -37,12 +37,13 @@
 .. image:: logo/snnax.svg
    :width: 200px
    :height: 100px
-   :scale: 50 %
+   :scale: 60 %
 
 
 SNNAX is a lightweight library for implementing Spiking Neural Networks (SNNs) 
 is JAX. It leverages the excellent and intuitive 
-[Equinox Library](https://docs.kidger.site/equinox/).
+`Link text <https://domain.invalid/>`_
+[equinox library](https://docs.kidger.site/equinox/).
 The core of SNNAX is a module that stacks layers of pre-defined or custom 
 defined SNNs and Equinox neural network modules, and providing the functions 
 to call them in a single `lax.scan` loop. 
