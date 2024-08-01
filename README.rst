@@ -43,7 +43,7 @@
 SNNAX is a lightweight library for implementing Spiking Neural Networks (SNNs) 
 is JAX. It leverages the excellent and intuitive 
 `equinox <https://docs.kidger.site/equinox/>`_.
-The full documentation can be found at https://pgi15.github.io/snnax/.
+The full documentation of ``snnax`` can be found at https://pgi15.github.io/snnax/.
 
 
 Installation
@@ -72,7 +72,7 @@ Introduction
 SNNAX is a lightweight library that builds on Equinox and JAX to provide a
 spiking neural network (SNN) simulator for deep learning. It is designed to
 be easy to use and flexible, allowing users to define their own SNN layers
-while the common deep learning layers are provided by Equinox.
+while the common deep learning layers are provided by ``equinox``.
 It is fully compatible with JAX and thus can fully leverage JAX' function
 transformation features like vectorization with ``jax.vmap``, automatic 
 differentiationand JIT compilation with XLA.
@@ -105,14 +105,13 @@ Next, we simply define a loss function for a single sample and then use the
 vectorization features of JAX to create a batched loss function.
 Note that the output of our model is a tuple of membrane potentials and spikes.
 The spike output is a list of spike trains for each layer of the SNN.
-For a feed-forward SNN, we can simply take the last element of the spike list, 
-i.e., ``out_spikes[-1]``, and sum the spikes across time to get the spike count.
+For out example, we can simply sum the spikes along the time axis to get the spike count.
 
 
 .. code-block:: python
 
     # Simple batched loss function
-    @partial(jax.vmap, in_axes=(0, 0, 0))
+    @partial(jax.vmap, in_axes=(None, 0, 0))
     def loss_fn(in_states, in_spikes, tgt_class):
         out_state, out_spikes = model(in_states, in_spikes)
 
@@ -155,7 +154,9 @@ using the ``init_states``` method of the ``Sequential`` class.
         states = model.init_states(key)
         model, opt_state, loss = update(model, opt_state, states, in_spikes, tgt_class)
 
+
 Fully worked-out examples can be found in the ``examples`` directory.
+
 
 Citation
 ========
