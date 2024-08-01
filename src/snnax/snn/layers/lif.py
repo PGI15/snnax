@@ -123,10 +123,10 @@ class LIF(StatefulLayer):
         self.decay_constants = self.init_parameters(decay_constants, shape)
 
     def init_state(self, 
-                   shape: StateShape, 
-                   key: PRNGKey, 
-                   *args, 
-                   **kwargs) -> Sequence[Array]:
+                    shape: StateShape, 
+                    key: PRNGKey, 
+                    *args, 
+                    **kwargs) -> Sequence[Array]:
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
         
         # The synaptic currents are initialized as zeros
@@ -202,7 +202,7 @@ class AdaptiveLIF(StatefulLayer):
     Implementation of a adaptive exponential leaky integrate-and-fire neuron
     as presented in https://neuronaldynamics.epfl.ch/online/Ch6.S1.html.
     
-    Args:
+    Arguments:
         `decay_constants` (Array): Decay constants for the LIF neuron.
         `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient.
         `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.

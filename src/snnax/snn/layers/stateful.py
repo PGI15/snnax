@@ -13,6 +13,10 @@ default_init_fn = lambda x, key, *args, **kwargs: jnp.zeros(x)
 class StatefulLayer(eqx.Module):
     """
     Base class to define custom spiking neuron types.
+
+    Arguments:
+        `init_fn` (Callable): Initialization function for the state of the layer.
+        `shape` (StateShape): Shape of the state.
     """
     init_fn: Callable
     shape: StateShape

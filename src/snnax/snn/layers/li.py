@@ -16,6 +16,7 @@ class SimpleLI(StatefulLayer):
         `init_fn` (Callable): Function to initialize the initial state of the spiking 
             neurons. Defaults to initialization with zeros if nothing else 
             is provided.
+        `shape` (StateShape): Shape of the state of the layer.
     """
     decay_constants: Array
 
