@@ -35,11 +35,11 @@ class SigmaDelta(StatefulLayer):
 
     [2]:
     https://github.com/lava-nc/lava/blob/main/src/lava/proc/sdn/process.py
-}
+    }
 
     Arguments:
-        `threshold` (float): desc
-        `spike_fn` (Callable): desc
+        `threshold` (Array): desc
+        `spike_fn` (SpikeFN): desc
         `init_fn` (Callable): desc
     """
     threshold: Array
@@ -66,7 +66,9 @@ class SigmaDelta(StatefulLayer):
         s_out = jnp.zeros(shape, dtype=jnp.float32)
         return [sigma, act_new, act, residue, s_out]
 
-    def sigma_decoder(self, state: Sequence[Array], synaptic_input: Array):
+    def sigma_decoder(self, 
+                        state: Sequence[Array], 
+                        synaptic_input: Array) -> Sequence[Array]:
         sigma, act_new, act, residue, s_out = state
 
         sigma += synaptic_input
@@ -74,7 +76,7 @@ class SigmaDelta(StatefulLayer):
 
         return [sigma, act_new, act, residue, s_out]
     
-    def delta_encoder(self, state: Sequence[Array]):
+    def delta_encoder(self, state: Sequence[Array]) -> Sequence[Array]:
         sigma, act_new, act, residue, s_out = state
 
         delta = act_new - act + residue
