@@ -142,7 +142,7 @@ For out example, we can simply sum the spikes along the time axis to get the spi
 
 Finally, we train the model by feeding our model the input spike trains
 and states. For this, we first have to initialize the states of the SNN
-using the ``init_states``` method of the ``Sequential`` class.
+using the ``init_states`` method of the ``Sequential`` class.
 
 
 .. code-block:: python
