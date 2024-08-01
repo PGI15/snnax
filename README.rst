@@ -172,10 +172,10 @@ JAX Ecosystem
 
 You can find JAX itself under https://github.com/google/jax.
 
-`equinox`` is available under https://github.com/patrick-kidger/equinox.
-
+`equinox` is available under https://github.com/patrick-kidger/equinox.
 
 Other JAX libraries for SNN training:
+
 - `spyx` is very fast and built on `haiku`:  https://github.com/kmheckel/spyx.
 - `slax` is very fast and built on `flax`:  https://github.com/kmheckel/spyx.
 - `rA9` is another library that we have not tested yet: https://github.com/MarkusAI/rA9
