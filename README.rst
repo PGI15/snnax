@@ -94,7 +94,7 @@ layers into a feed-forward architecture.
 
     model = snn.Sequential(
         nn.Conv2D(2, 32, 7, 2, key=key1),
-        snn.LIF([.9, .8], shape=(8, 8) key=key2),
+        snn.LIF([.9, .8], shape=(8, 8), key=key2),
         snn.flatten(),
         nn.Linear(64, 11, key=key3),
         snn.LIF([.9, .8], shape=11, key=key4)
