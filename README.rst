@@ -117,16 +117,28 @@ i.e., ``out_spikes[-1]``, and sum the spikes across time to get the spike count.
         out_state, out_spikes = model(in_states, in_spikes)
 
         # Spikes from the last layer are summed across time
-        pred = out_spikes[-1].sum(-1)
+        pred = out_spikes.sum(-1)
         loss = optax.softmax_cross_entropy(pred, tgt_class)
         return loss
 
     # Calculating the gradient with Equinox PyTree filters and
     # subsequently jitting the resulting function
-    @eqx.filter_jit
     @eqx.filter_value_and_grad
     def loss_and_grad(in_states, in_spikes, tgt_class):
         return jnp.mean(loss_fn(in_states, in_spikes, tgt_class))
+
+    # Finally, we update the parameters using a simple optimizer
+    @eqx.filter_jit
+    def update(model, opt_state, in_spiked, tgt_class):
+        # Get gradients
+        loss, grads = loss_and_grad(model, in_spikes, tgt_class)
+
+        # Calculate parameter updates using the optimizer
+        updates, opt_state = optim.update(grads, opt_state)
+
+        # Update parameter PyTree with Equinox and optax
+        model = eqx.apply_updates(model, updates)
+        return model, opt_state, loss
 
 
 Finally, we train the model by feeding our model the input spike trains
@@ -141,14 +153,7 @@ using the ``init_states``` method of the ``Sequential`` class.
     for in_spikes, tgt_class in tqdm(dataloader):
         # Initializing the membrane potentials of LIF neurons
         states = model.init_states(key)
-
-        # Jitting with Equinox PyTree filters
-        loss, grads = loss_and_grad(states, in_spikes, tgt_class)
-
-        # Update parameter PyTree with Equinox and optax
-        updates, opt_state = optim.update(grads, opt_state)
-        model = eqx.apply_updates(model, updates)
-
+        model, opt_state, loss = update(model, opt_state, states, in_spikes, tgt_class)
 
 Fully worked-out examples can be found in the ``examples`` directory.
 
@@ -172,7 +177,7 @@ JAX Ecosystem
 
 You can find JAX itself under https://github.com/google/jax.
 
-``equinox``` is available under https://github.com/patrick-kidger/equinox.
+``equinox`` is available under https://github.com/patrick-kidger/equinox.
 
 Other JAX libraries for SNN training:
 
