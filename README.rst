@@ -183,7 +183,7 @@ You can find JAX itself under https://github.com/google/jax.
 Other JAX libraries for SNN training:
 
 - ``spyx`` is very fast and built on ``haiku``:  https://github.com/kmheckel/spyx.
-- ``slax`` is very fast and built on ``flax``:  https://github.com/kmheckel/spyx.
+- ``slax`` is very fast and built on ``flax``:  https://github.com/Intelligent-Microsystems-Lab/slax/tree/main.
 - ``rA9`` is another library that we have not tested yet: https://github.com/MarkusAI/rA9
 - ``jaxsnn`` is a JAX-based library to train SNNs for deployment BrainScalesS2: https://github.com/electronicvisions/jaxsnn
 - ``rockpool`` is a JAX-based library to train SNNs for deployment on Xylo: https://rockpool.ai/index.html
