@@ -7,7 +7,7 @@ import snnax.snn as snn
 from snnax.snn.architecture import (default_forward_fn, delayed_forward_fn)
 
 
-def test_forward_fn_base(forward_fn):
+def base_forward_fn_test(forward_fn):
     key = jrand.PRNGKey(42)
     keys = jrand.split(key, 4)
     time_steps = 25
@@ -43,7 +43,7 @@ def test_forward_fn_base(forward_fn):
 
 def test_default_forward_fn():
     print("Testing default_forward_fn and gradient computation...")
-    test_forward_fn_base(default_forward_fn)
+    base_forward_fn_test(default_forward_fn)
 
 
 def test_debug_forward_fn():
@@ -52,14 +52,4 @@ def test_debug_forward_fn():
 
 def test_delayed_forward_fn():
     print("Testing delayed_forward_fn and gradient computation...")
-    test_forward_fn_base(delayed_forward_fn)
-
-
-if __name__ == "__main__":
-    test_default_forward_fn()
-    print("default_forward_fn... Ok!")
-    test_delayed_forward_fn()
-    print("delayed_forward_fn... Ok!")
-    test_debug_forward_fn()
-    print("debug_forward_fn... Ok!")
-    print("All tests passed!")
+    base_forward_fn_test(delayed_forward_fn)
