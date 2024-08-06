@@ -6,8 +6,8 @@ import jax.lax as lax
 import jax.numpy as jnp
 from jax.lax import stop_gradient, clamp
 
-from .stateful import StatefulLayer, StateShape, default_init_fn
-from ...functional.surrogate import superspike_surrogate, SpikeFn, StatefulOutput
+from .stateful import StatefulLayer, StateShape, default_init_fn, StatefulOutput
+from ...functional.surrogate import superspike_surrogate, SpikeFn
 from chex import Array, PRNGKey
 
 
