@@ -14,7 +14,7 @@ from jaxtyping import PyTree
 from .layers.stateful import StatefulLayer, RequiresStateLayer
 
 
-@dataclass
+@dataclass(frozen=True)
 class GraphStructure:
     """
     This class contains meta-information about the computational graph.
@@ -31,6 +31,10 @@ class GraphStructure:
     num_layers: int
     input_layer_ids: Sequence[Sequence[int]]
     input_connectivity: Sequence[Sequence[int]]
+
+    @property
+    def output_layer_ids(self):
+        return [self.num_layers-1]
 
 
 ForwardFnOutput = Tuple[Sequence[Array], Sequence[Array]]

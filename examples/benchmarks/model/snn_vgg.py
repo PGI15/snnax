@@ -4,7 +4,7 @@
 # Author: Emre Neftci
 #
 # Creation Date : Tue 28 Mar 2023 03:15:53 PM CEST
-# Last Modified : Tue 23 Apr 2024 10:00:52 PM CEST
+# Last Modified : Wed 14 Aug 2024 04:38:41 PM CEST
 #
 # Copyright : (c) Emre Neftci, PGI-15 Forschungszentrum Juelich
 # Licence : GPLv2
@@ -118,7 +118,7 @@ str, int]],
     for v in cfg:
         shape = np.concatenate([[v], input_size[1:]])
         if v == "M":
-            layers += [snn.MaxPool2d(kernel_size=2,stride=2,padding=0, spike_fn = surr, threshold = 1)]
+            layers += [snn.SpikingMaxPool2d(kernel_size=2,stride=2,padding=0, spike_fn = surr, threshold = 1)]
             input_size[1:] = (input_size[1:]-2)//2 + 1
         elif v == "AL":
             layers += [eqx.nn.AdaptiveAvgPool2d(target_shape=(4,4)),

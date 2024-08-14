@@ -24,11 +24,11 @@ def gen_feed_forward_struct(num_layers: int) -> GraphStructure:
     Returns:
         `GraphStructure`: Tuple that contains the input connectivity and input layer ids.
     """
-    input_connectivity = [[id] for id in range(-1, num_layers-1)]
-    input_connectivity[0] = []
-    input_layer_ids = [[] for _ in range(0, num_layers)]
-    input_layer_ids[0] = [0]
-    return GraphStructure(num_layers, input_layer_ids, input_connectivity)
+    input_connectivity = [tuple([id]) for id in range(-1, num_layers-1)]
+    input_connectivity[0] = tuple([])
+    input_layer_ids = [tuple([]) for _ in range(0, num_layers)]
+    input_layer_ids[0] = tuple([0])
+    return GraphStructure(num_layers, tuple(input_layer_ids), tuple(input_connectivity))
 
 
 class Sequential(StatefulModel):
@@ -214,14 +214,11 @@ class SequentialLocalFeedback(Sequential):
                 feedback_layers: dict = None) -> None:
 
         num_layers = len(list(layers))
-        input_connectivity, input_layer_ids = gen_feed_forward_struct(num_layers)
+        graph_structure = gen_feed_forward_struct(num_layers)
+        input_connectivity = [list(i) for i in graph_structure.input_connectivity]
+        input_layer_ids = [list(i) for i in graph_structure.input_layer_ids ]
 
-        # Constructing the connectivity graph
-        graph_structure = GraphStructure(
-            num_layers = num_layers,
-            input_layer_ids = input_layer_ids,
-            input_connectivity = input_connectivity
-        )
+
 
         # TODO this is shown to be dead-end code. Fix linting or replace...
         if feedback_layers is None:
@@ -231,6 +228,13 @@ class SequentialLocalFeedback(Sequential):
         else:
             for i, (k, l) in enumerate(feedback_layers.items()):
                 input_connectivity[l].append(k)
+
+        # Constructing the connectivity graph
+        graph_structure_feedback = GraphStructure(
+            num_layers = num_layers,
+            input_layer_ids = input_layer_ids,
+            input_connectivity = input_connectivity
+        )
 
         StatefulModel.__init__(self,
                                graph_structure=graph_structure,

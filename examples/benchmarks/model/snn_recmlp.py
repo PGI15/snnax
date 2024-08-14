@@ -4,7 +4,7 @@
 # Author: Emre Neftci
 #
 # Creation Date : Tue 28 Mar 2023 12:44:33 PM CEST
-# Last Modified : Wed 14 Aug 2024 04:54:48 PM CEST
+# Last Modified : Wed 14 Aug 2024 05:08:20 PM CEST
 #
 # Copyright : (c) Emre Neftci, PGI-15 Forschungszentrum Juelich
 # Licence : GPLv2
@@ -19,6 +19,7 @@ class SNNMLP(eqx.Module):
     cell: eqx.Module
     ro_int: int 
     burnin: int 
+    shapes: List[int] = eqx.static_field()
 
     def __init__(self, 
                  in_channels: int = 32*32*2,
@@ -40,10 +41,10 @@ class SNNMLP(eqx.Module):
                  **kwargs):
         
         ckey, lkey = jrandom.split(key)
-        graph_structure = snn.composed.gen_feed_forward_struct(6)
-        #conn,inp,out = graph_structure.input_connectivity, graph_structure.input_layer_ids, graph_structure.output_layer_ids
+        #conn,inp,out = snn.composed.gen_feed_forward_struct(6)
         self.ro_int = ro_int
         self.burnin = burnin
+        #graph = snn.GraphStructure(6,inp,out,conn)
 
         if tau_m is None:
             tau_m = dt/np.log(alpha)
@@ -57,9 +58,7 @@ class SNNMLP(eqx.Module):
             assert beta is None, "Only one of beta or tau_s can be specified"
             beta = np.exp(-dt/tau_s)
 
-        
-        self.cell = snn.Sequential(
-            *make_layers(in_channels,
+        layers, self.shapes = make_layers(in_channels,
                          hid_channels,
                          out_channels,
                          key = key,
@@ -68,8 +67,12 @@ class SNNMLP(eqx.Module):
                          beta = beta,
                          size_factor=size_factor, 
                          use_bias = use_bias,
-                         norm = norm, num_hid_layers=num_hid_layers),
-            forward_fn = snn.architecture.default_forward_fn) # Remove debug_forward_fn for speed
+                         norm = norm, num_hid_layers=num_hid_layers)
+        
+        self.cell = snn.composed.SequentialLocalFeedback(
+            *layers,
+            forward_fn = snn.architecture.default_forward_fn,
+            feedback_layers = None,) 
 
     def __call__(self, x, key=None, seqlen=None):
         if seqlen is not None:
@@ -90,19 +93,19 @@ class SNNMLP(eqx.Module):
             return out[-1][::-ro]
 
     def get_cumsum(self,x,key, seqlen=None):
-        state = self.cell.init_state(x[0,:].shape, key)
+        state = self.cell.init_state([ x[0,:].shape ], shapes=self.shapes, key=key)
         state, out = self.cell(state, x, key, burnin=self.burnin)
         seq = out[-1]
         f = lambda n: jnp.tile(jnp.arange(out[-1].shape[0])<(n-self.burnin), (out[-1].shape[1],1)).T
         return (f(seqlen)*seq).sum(axis=0)
 
     def embed(self, x, key):
-        state = self.cell.init_state(x[0,:].shape, key)
+        state = self.cell.init_state([ x[0,:].shape ], shapes=self.shapes, key = key)
         state, out = self.cell(state, x, key, burnin=self.burnin)
         return out[-1][-1]
     
     def get_final_states(self, x, key, seqlen=None):
-        state = self.cell.init_state(x[0,:].shape, key)
+        state = self.cell.init_state([ x[0,:].shape ], shapes=self.shapes, key = key)
 
         states, out = self.cell(state, x, key, burnin=self.burnin)
         if seqlen is None:
@@ -110,27 +113,50 @@ class SNNMLP(eqx.Module):
         else:
             return states, out[-1][seqlen-self.burnin,:]
 
+class LinearNonDiag(eqx.nn.Linear):
+    def __call__(self, x: Array, *, key: Optional[Sequence[PRNGKey]] = None) -> Array:
+        if self.in_features == "scalar":
+            if jnp.shape(x) != ():
+                raise ValueError("x must have scalar shape")
+            x = jnp.broadcast_to(x, (1,))
+        x = (self.weight-jnp.diag(self.weight)) @ x
+        if self.bias is not None:
+            x = x + self.bias
+        if self.out_features == "scalar":
+            assert jnp.shape(x) == (1,)
+            x = jnp.squeeze(x)
+        return x
+
 def make_layers(in_channels, hid_channels, out_channels, key, neuron_model, size_factor=1, use_bias=True, num_hid_layers=2, alpha=0.95, beta=.85, norm=False):
     surr = sr(beta = 10.0)
+    shapes = []
     layers = [snn.Flatten()]
+    shapes.append(in_channels)
     for i in range(num_hid_layers):
         m = []
         init_key, key = jrandom.split(key,2)
-        m.append(eqx.nn.Linear(in_channels, hid_channels*size_factor, key=init_key, use_bias=use_bias))
+        _out_s = hid_channels*size_factor
+        _ff = eqx.nn.Linear(in_channels, _out_s, key=init_key, use_bias=use_bias)
+        _rec = LinearNonDiag(_out_s, _out_s, key=init_key, use_bias=False)
+        m.append(snn.composed.Parallel([_ff,_rec]))
+        shapes.append([in_channels,_out_s])
         if norm:
-            m.append(eqx.nn.LayerNorm(shape=[hid_channels*size_factor],elementwise_affine=False, eps=1e-4))
+            m.append(eqx.nn.LayerNorm(shape=(_out_s,), elementwise_affine=False, eps=1e-4))
         m.append(neuron_model(decay_constants = [alpha,beta], 
                               spike_fn=surr, 
                               reset_val=1,
-                              shape=[hid_channels*size_factor],
+                              shape=[_out_s],
                               key=init_key
                               ))
-        layers += m
+        
+        #layers += m
+        layers .append( snn.composed.CompoundLayer(*m))
         in_channels = hid_channels*size_factor
 
     init_key, key = jrandom.split(key,2)
     layers.append(eqx.nn.Linear(hid_channels*size_factor, out_channels, key=key, use_bias=use_bias))
-    return layers
+    shapes.append(hid_channels*size_factor)
+    return layers, shapes
 
 def _model_init(model):
     ## Custom code ensures that only  conv layers are trained

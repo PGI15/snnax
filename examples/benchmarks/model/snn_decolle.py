@@ -4,11 +4,19 @@
 # Author: Emre Neftci
 #
 # Creation Date : Tue 28 Mar 2023 12:21:33 PM CEST
-# Last Modified : Fri 19 Apr 2024 11:16:40 AM CEST
+# Last Modified : Wed 14 Aug 2024 04:38:15 PM CEST
 #
 # Copyright : (c) Emre Neftci, PGI-15 Forschungszentrum Juelich
 # Licence : GPLv2
 #----------------------------------------------------------------------------- 
+
+'''
+SNN Decolle model as implemented in the paper: Synaptic Plasticity Dynamics for
+Deep Continuous Local Learning
+(DECOLLE) [doi: 10.3389/fnins.2020.00424]
+'''
+
+
 from .common import *
 import snnax.snn as snn
 from snnax.functional.surrogate import superspike_surrogate as sr
@@ -66,14 +74,14 @@ class SNNDECOLLE(eqx.Module):
             eqx.nn.LayerNorm([2,32,32], eps=1e-5, elementwise_affine=False),
             eqx.nn.Conv2d(2, 8*size_factor, 5, 1, padding=2, key=key1, use_bias=True),
             snn.LIFSoftReset([alpha,beta], spike_fn=surr, reset_val=1),
-            snn.MaxPool2d(2,2,0, spike_fn = surr),
+            snn.SpikingMaxPool2d(2,2,0, spike_fn = surr),
 
             eqx.nn.LayerNorm([8*size_factor,16,16], eps=1e-5, elementwise_affine=False),
             eqx.nn.Conv2d(8*size_factor, 8*size_factor, 5, 1, padding=2, key=key2, use_bias=True),
             snn.LIFSoftReset([alpha,beta], spike_fn=surr, reset_val=1),
             eqx.nn.Conv2d(8*(1+int(skip_connections))*size_factor, 16*size_factor, 5, 1, padding=2, key=key3, use_bias=True),
             snn.LIFSoftReset([alpha,beta], spike_fn=surr, reset_val=1),
-            snn.MaxPool2d(2,2,0, spike_fn = surr, threshold=1),    
+            snn.SpikingMaxPool2d(2,2,0, spike_fn = surr, threshold=1),    
 
             eqx.nn.LayerNorm((16*size_factor,8,8), eps=1e-5, elementwise_affine=False),
             eqx.nn.Conv2d(16*size_factor, 16*size_factor, 5, 1, padding=2, key=key2, use_bias=True),
@@ -81,7 +89,7 @@ class SNNDECOLLE(eqx.Module):
             eqx.nn.LayerNorm((16*size_factor,8,8), eps=1e-5, elementwise_affine=False),
             eqx.nn.Conv2d(16*(1+int(skip_connections))*size_factor, 32*size_factor, 5, 1, padding=2, key=key3, use_bias=True),
             snn.LIFSoftReset([alpha,beta], spike_fn=surr, reset_val=1),
-            snn.MaxPool2d(2,2,0, spike_fn = surr, threshold=1), 
+            snn.SpikingMaxPool2d(2,2,0, spike_fn = surr, threshold=1), 
 
             snn.Flatten(),
             eqx.nn.Linear(512*size_factor, num_classes, key=key4, use_bias=True)],
