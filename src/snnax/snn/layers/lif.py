@@ -6,7 +6,7 @@ import jax.lax as lax
 import jax.numpy as jnp
 from jax.lax import stop_gradient, clamp
 
-from .stateful import StatefulLayer, StateShape, default_init_fn
+from .stateful import StatefulLayer, StateShape, default_init_fn, StatefulOutput
 from ...functional.surrogate import superspike_surrogate, SpikeFn
 from chex import Array, PRNGKey
 
@@ -57,7 +57,7 @@ class SimpleLIF(StatefulLayer):
     def __call__(self, 
                 state: Array, 
                 synaptic_input: Array, *, 
-                key: Optional[PRNGKey] = None):
+                key: Optional[PRNGKey] = None) -> StatefulOutput:
         alpha = lax.clamp(0.5, self.decay_constants[0], 1.0)
         mem_pot, spike_output = state
         mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input
@@ -139,7 +139,7 @@ class LIF(StatefulLayer):
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array,
-                *, key: Optional[PRNGKey] = None):
+                *, key: Optional[PRNGKey] = None) -> StatefulOutput:
         mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
@@ -173,7 +173,7 @@ class LIFSoftReset(LIF):
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array,
-                *, key: Optional[PRNGKey] = None):
+                *, key: Optional[PRNGKey] = None) -> StatefulOutput:
         mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
@@ -260,7 +260,7 @@ class AdaptiveLIF(StatefulLayer):
     def __call__(self, 
                 state: Sequence[Array], 
                 synaptic_input: Array, 
-                *, key: Optional[PRNGKey] = None):
+                *, key: Optional[PRNGKey] = None) -> StatefulOutput:
         mem_pot, ada_var = state
 
         alpha = clamp(0.5,self.decay_constants[0],1.)
