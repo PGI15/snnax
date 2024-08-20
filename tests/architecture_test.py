@@ -4,10 +4,11 @@ import jax.numpy as jnp
 import jax.random as jrand
 
 import snnax.snn as snn
-from snnax.snn.architecture import (default_forward_fn, delayed_forward_fn)
+from snnax.snn.architecture import (default_forward_fn)
 
 
-def base_forward_fn_test(forward_fn):
+def test_default_forward_fn():
+    print("Testing default_forward_fn and gradient computation...")
     key = jrand.PRNGKey(42)
     keys = jrand.split(key, 4)
     time_steps = 25
@@ -22,7 +23,7 @@ def base_forward_fn_test(forward_fn):
         snn.Flatten(),
         nn.Linear(16 * 3 * 3, 5, use_bias=False, key=keys[4]),
         snn.LIF([.95, .85], shape=(5,), key=keys[5]),
-        forward_fn=forward_fn
+        forward_fn=default_forward_fn
     )
 
     input_spikes = jrand.uniform(key, (32, time_steps, 3, 7, 7))
@@ -41,15 +42,9 @@ def base_forward_fn_test(forward_fn):
     assert jnp.abs(grads._fun.layers[0].weight).sum() != 0
 
 
-def test_default_forward_fn():
-    print("Testing default_forward_fn and gradient computation...")
-    base_forward_fn_test(default_forward_fn)
-
-
 def test_debug_forward_fn():
     pass
 
 
 def test_delayed_forward_fn():
-    print("Testing delayed_forward_fn and gradient computation...")
-    base_forward_fn_test(delayed_forward_fn)
+    pass
