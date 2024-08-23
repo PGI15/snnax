@@ -4,4 +4,4 @@
 **/data/
 intro.py
 **/build/
-.coverage
+.coverage/
