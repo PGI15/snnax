@@ -5,4 +5,4 @@
 intro.py
 **/build/
 .coverage*
-**/src/snnax/snnax.egg-info/
+/src/snnax/snnax.egg-info/*
