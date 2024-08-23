@@ -1,3 +1,4 @@
+.coverage
 .gitignore
 AUTHORS.rst
 CHANGELOG.rst
@@ -81,6 +82,7 @@ src/snnax/snn/layers/stateful.py
 src/snnax/utils/__init__.py
 src/snnax/utils/filter.py
 src/snnax/utils/tree.py
+tests/.coverage
 tests/architecture_test.py
 tests/composed_test.py
 tests/filter_test.py
