@@ -3,4 +3,4 @@
 **/__pycache__/
 **/data/
 intro.py
-build/
+**/build/
