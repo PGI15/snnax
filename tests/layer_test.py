@@ -2,10 +2,13 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jrand
 import pytest
+import jax
 
 import snnax.snn as snn
 from snnax.utils.filter import filter_grad
 from snnax.utils.tree import is_decay_constants
+
+import matplotlib.pyplot as plt
 
 
 @pytest.mark.parametrize("layer", [
@@ -13,6 +16,7 @@ from snnax.utils.tree import is_decay_constants
     snn.LIF([0.95, 0.85]),
     snn.IAF([0.95], [0.85]),
     snn.SimpleLI([0.95]),
+    snn.SigmaDelta([0.7, 0.4, 0.7]),
 ])
 def test_layer(layer):
     key = jrand.PRNGKey(42)
@@ -42,3 +46,4 @@ def test_layer(layer):
 
 def test_srm():
     pass
+

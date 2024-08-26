@@ -60,9 +60,8 @@ def test_gen_feed_forward_struct():
     num_layers = 6
     graph_struct = gen_feed_forward_struct(num_layers)
 
-    assert graph_struct.input_layer_ids == [[0], [], [], [], [], []]
-    assert graph_struct.input_connectivity == [[], [0], [1], [2], [3], [4]]
-
+    assert graph_struct.input_layer_ids == ((0), (), (), (), (), ())
+    assert graph_struct.input_connectivity == ((), (0), (1), (2), (3), (4))
 
 def test_compound_layer():
     pass
