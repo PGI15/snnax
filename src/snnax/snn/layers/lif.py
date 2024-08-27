@@ -156,14 +156,14 @@ class LIF(StatefulLayer):
         spike output for the layer.
 
         Parameters:
-            `shape` (StateShape): Shape of the neuron layer.
+            `shape` (StateShape): Shape of the layer.
             `key` (PRNGKey): Random number generator key for initialization of parameters.
             `*args`
             `**kwargs`
 
         Returns:
-            (Sequence[Array]): Contains the initial membrane potential, synaptic current 
-                and spike output state variables consecutively.
+            `[0]` (Sequence[Array]): New state of the layer. Contains the initial membrane 
+                potential, synaptic current and spike output state variables consecutively.
         '''
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
         
@@ -221,7 +221,7 @@ class LIFSoftReset(LIF):
     For the neurons that spike, reset potential is subtracted from the membrane
     potential. Otherwise, the membrane potential does not change prior to the 
     calculation of its value for the next timestep.
-    
+
     If the neurons spikes: 
     $V \rightarrow V_{reset}$
     where $V_{reset}$ is the parameter reset_val

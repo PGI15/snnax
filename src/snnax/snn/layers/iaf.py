@@ -17,9 +17,9 @@ class SimpleIAF(StatefulLayer):
     Requires one constant to simulate constant membrane potential leak.
 
     Arguments:
-        `leak` (Array): Describes the constant leak of the membrane potential.
+        `leak` (Union[float, Array]): Describes the constant leak of the membrane potential.
             Defaults to zero, i.e. no leak.
-        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
+        `threshold` (Union[float, Array]): Spike threshold for membrane potential. Defaults to 1.
         `spike_fn` (SpikeFn): Spike treshold function with custom surrogate 
             gradient.
         `stop_reset_grad` (bool): Boolean to control if the gradient is 
@@ -29,15 +29,15 @@ class SimpleIAF(StatefulLayer):
         `init_fn` (Callable): Function to initialize the state of the spiking neurons.
             Defaults to initialization with zeros if nothing else is provided.
     """
-    leak: Array
-    threshold: Array
+    leak: Union[float, Array]
+    threshold: Union[float, Array]
     spike_fn: SpikeFn
     stop_reset_grad: bool
     reset_val: Optional[Array]
 
     def __init__(self,
-                leak: Array = 0.,
-                threshold: Array = 1.,
+                leak: Union[float, Array] = 0.,
+                threshold: Union[float, Array] = 1.,
                 spike_fn: SpikeFn = superspike_surrogate(10.), 
                 stop_reset_grad: bool = True,
                 reset_val: Optional[Array] = None,
@@ -53,10 +53,23 @@ class SimpleIAF(StatefulLayer):
         self.reset_val = reset_val if reset_val is not None else None
 
     def __call__(self, 
-                state: Array, 
+                state: Sequence[Array], 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> StatefulOutput:
+        """
+        Takes the current timestep state and synaptic input of the layer and generates
+        the new state and spike output for the layer.
 
+        Parameters:
+            `state` (Sequence[Array]): Contains the state variables membrane potential and spike 
+                output of the layer.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
+
+        Returns:
+            `[0]` (Sequence[Array]): New state of the layer.
+            `[1]` (Array): Spike outputs of the layer.
+        """
         mem_pot, spike_output = state
         mem_pot = (mem_pot-self.leak) + synaptic_input
         spike_output = self.spike_fn(mem_pot-self.threshold)
@@ -94,16 +107,16 @@ class IAF(StatefulLayer):
                     else is provided.
     """
     decay_constants: Union[Sequence[float], Array]
-    leak: Array
-    threshold: Array
+    leak: Union[float, Array]
+    threshold: Union[float, Array]
     spike_fn: SpikeFn
     stop_reset_grad: bool
     reset_val: Optional[Array]
 
     def __init__(self,
                 decay_constants: Union[Sequence[float], Array],
-                leak: Array = 0.,
-                threshold: Array = 1.,
+                leak: Union[float, Array] = 0.,
+                threshold: Union[float, Array] = 1.,
                 spike_fn: Callable = superspike_surrogate(10.),
                 stop_reset_grad: bool = True,
                 reset_val: Optional[Array] = None,
@@ -124,6 +137,19 @@ class IAF(StatefulLayer):
                    key: PRNGKey, 
                    *args, 
                    **kwargs) -> Sequence[Array]:
+        """
+        Initialize and return the state variables membrane potential, synaptic current and 
+        spike output for the layer.
+        
+        Parameters:
+            `shape` (StateShape): Shape of the layer.
+            `key` (PRNGKey): Random number generator key for initialization of parameters.
+            `*args`
+            `**kwargs`
+        
+        Returns:
+            `[0]` (Sequence[Array]): Initial state of the layer.
+        """
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
         
         # The synaptic currents are initialized as zeros.
@@ -137,6 +163,20 @@ class IAF(StatefulLayer):
                 state: Sequence[Array], 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> StatefulOutput:
+        """
+        Takes the current timestep state and synaptic input of the layer and generates
+        the new state and spike output for the layer.
+
+        Parameters:
+            `state` (Sequence[Array]): Contains the state variables membrane potential and spike 
+                output of the layer.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
+
+        Returns:
+            `[0]` (Sequence[Array]): New state of the layer.
+            `[1]` (Array): Spike outputs of the layer.
+        """
         mem_pot, syn_curr, spiking_output = state
 
         beta  = clamp(0.5, self.decay_constants[0], 1.0)

@@ -29,7 +29,7 @@ class SimpleLI(StatefulLayer):
         self.decay_constants = self.init_parameters(decay_constants, shape)
 
     def __call__(self, 
-                state: Array, 
+                state: Sequence[Array], 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> StatefulOutput:
         """
@@ -38,13 +38,13 @@ class SimpleLI(StatefulLayer):
         for the next timestep.
         
         Parameters:
-            `state` (Array): Contains membrane potential state variable array, 
+            `state` (Sequence[Array]): Contains membrane potential state variable array, 
                 which is the only state variable for the Leaky Integrator layer.
             `synaptic_input` (Array): Input values for the layer.
             `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
 
         Returns:
-            `[0]` (Sequence[Array]): New state of the layer. Contains only membrane potential.
+            `[0]` (Sequence[Array]): New state of the layer.
             `[1]` (Array): Membrane potential state variable.
         """
         alpha = clamp(0.5, self.decay_constants[0], 1.0)
