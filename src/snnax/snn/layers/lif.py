@@ -17,29 +17,32 @@ class SimpleLIF(StatefulLayer):
     which does not make explicit use of synaptic currents.
     Requires one decay constant to simulate membrane potential leak.
     
-    Arguments:
-        `decay_constants` (Array): Decay constant of the simple LIF neuron.
+    Attributes:
+        `decay_constants` (snnaxArray): Decay constant of the simple LIF neuron.
         `spike_fn` (Array): Spike treshold function with custom surrogate gradient.
-        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
-        `reset_val` (Array): Reset value after a spike has been emitted.
+            Defaults to snnax.functional.surrogate.superspike_surrogate(10.).
+        `threshold` (thresholdDtype): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Array): Reset value after a spike has been emitted. Defaults to None.
         `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
-                        through the refectory potential.
-        `init_fn` (Callable): Function to initialize the initial state of the 
-                    spiking neurons. Defaults to initialization with zeros 
-                    if nothing else is provided.
-        `shape` (StateShape): if given, the parameters will be expanded into vectors and initialized accordingly
-        `key` (PRNGKey): used to initialize the parameters when shape is not None
+                        through the refectory potential. Defaults to True.
+        `init_fn` (Optional[Callable]): Function to initialize the initial state of the 
+                    spiking neurons. Defaults to initialization with zeros.
+        `shape` (Optional[StateShape]): Shape of the neuron layer. 
+            If given, the parameters will be expanded into vectors and initialized accordingly.
+            Defaults to None.
+        `key` (Optional[PRNGKey]): Random number generator key for initialization of parameters.
+            Defaults to None.
     """
     decay_constants: Union[Sequence[float], Array] 
-    threshold: Array
+    threshold: Union[float, Array]
     spike_fn: SpikeFn
     stop_reset_grad: bool
     reset_val: Optional[Array]
 
     def __init__(self,
-                decay_constants: Array,
+                decay_constants: Union[Sequence[float], Array],
                 spike_fn: SpikeFn = superspike_surrogate(10.),
-                threshold: Array = 1.,
+                threshold: Union[float, Array] = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[Array] = None,
                 init_fn: Optional[Callable] = default_init_fn,
@@ -58,6 +61,20 @@ class SimpleLIF(StatefulLayer):
                 state: Array, 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> StatefulOutput:
+        '''
+        Given the state and synaptic input of the layer, generate the new state and 
+        spike outputs.
+
+        Parameters:
+            `state` (StateShape): A sequence of arrays composed of membrane potential 
+                values at position 0 and spike outputs at position 1.
+            `synaptic_input` (Array): An array of input values to the SimpleLIF layer.
+            `key` (Optional[PRNGKey]): Random number generator key. Defaults to None.
+
+        Returns:
+            (StatefulOutput): A list that has the new state array at position 0 and SimpleLIF layer
+                spike outputs at position 1.
+        '''
         alpha = lax.clamp(0.5, self.decay_constants[0], 1.0)
         mem_pot, spike_output = state
         mem_pot = alpha*mem_pot + (1.-alpha)*synaptic_input
@@ -79,28 +96,35 @@ class SimpleLIF(StatefulLayer):
 
 class LIF(StatefulLayer):
     """
-    TODO improve docstring
-    Implementation of a leaky integrate-and-fire neuron with
-    synaptic currents. Requires two decay constants to describe
-    decay of membrane potential and synaptic current.
+    Implementation of a layer composed of Leaky Integrate and Fire neurons 
+    as given in https://arxiv.org/abs/1901.09948. Input state variables for a 
+    Leaky Integrate and Fire neuron is 'membrane potential', 'synaptic current' 
+    and 'spike outputs'. Each LIF neuron also requires decay constants named 
+    'alpha' and 'beta'. 'alpha' controls the decay of membrane potential and 
+    synaptic current for generation of new membrane potential value. 'beta' 
+    controls the decay of synaptic current and synaptic input for generation of 
+    the new synaptic current. In addition, a differentiable spike generation function 
+    'spike_fn' is required.
 
     Arguments:
 
-        `decay_constants` (Array): Decay constants for the LIF neuron.
-        `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient.
-        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
-        `reset_val` (Array): Reset value after a spike has been emitted. 
+        `decay_constants` (Union[Sequence[float], Array]): Decay constants for the LIF neuron,
+            which are alpha and beta.
+        `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient. 
+            Defaults to snnax.functional.surrogate.superspike_surrogate(10.).
+        `threshold` (Union[float, Array]): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Optional[Array]): Reset value after a spike has been emitted. 
                         Defaults to None.
         `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
-                            through the refectory potential.
-        `init_fn` (Callable): Function to initialize the state of the spiking neurons.
-                    Defaults to initialization with zeros if 
-                    nothing else is provided.
-        `shape` (Sequence[int]): Shape of the neuron layer.
-        `key` (PRNGKey): Random number generator key for initialization of parameters.
+                            through the refectory potential. Defaults to True.
+        `init_fn` (Optional[Callable]): Function to initialize the state of the spiking neurons.
+                    Defaults to initialization with zeros.
+        `shape` (Optional[StateShape]): Shape of the neuron layer. Defaults to None.
+        `key` (Optional[PRNGKey]): Random number generator key for initialization of parameters.
+            Defaults to None.
     """
-    decay_constants: Array
-    threshold: Array
+    decay_constants: Union[Sequence[float], Array]
+    threshold: Union[float, Array]
     spike_fn: SpikeFn
     reset_val: Array
     stop_reset_grad: bool
@@ -108,7 +132,7 @@ class LIF(StatefulLayer):
     def __init__(self, 
                 decay_constants: Union[Sequence[float], Array],
                 spike_fn: SpikeFn = superspike_surrogate(10.),
-                threshold: Array = 1.,
+                threshold: Union[float, Array] = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[Array] = None,
                 init_fn: Optional[Callable] = default_init_fn,
@@ -127,6 +151,20 @@ class LIF(StatefulLayer):
                     key: PRNGKey, 
                     *args, 
                     **kwargs) -> Sequence[Array]:
+        '''
+        Initialize and return the state variables membrane potential, synaptic current and 
+        spike output for the layer.
+
+        Parameters:
+            `shape` (StateShape): Shape of the neuron layer.
+            `key` (PRNGKey): Random number generator key for initialization of parameters.
+            `*args`
+            `**kwargs`
+
+        Returns:
+            (Sequence[Array]): Contains the initial membrane potential, synaptic current 
+                and spike output state variables consecutively.
+        '''
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
         
         # The synaptic currents are initialized as zeros
@@ -140,6 +178,20 @@ class LIF(StatefulLayer):
                 state: Sequence[Array], 
                 synaptic_input: Array,
                 *, key: Optional[PRNGKey] = None) -> StatefulOutput:
+        '''
+        Given the state and synaptic input of the layer, generate the new state and 
+        spike outputs.
+
+        Parameters:
+            `state` (Sequence[Array]): Contains membrane potential, synaptic current and 
+                spike output state variables consecutively.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Random number generator key. Defaults to None.
+
+        Returns:
+            (Sequence[Array]): Contains the new state at position 0 and layer spike outputs 
+                at position 1.
+        '''
         mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
@@ -165,7 +217,11 @@ class LIF(StatefulLayer):
 
 class LIFSoftReset(LIF):
     """
-    Similar to LIF but reset is additive (relative) rather than absolute:
+    Similar to LIF but reset is additive (relative) rather than absolute.
+    For the neurons that spike, reset potential is subtracted from the membrane
+    potential. Otherwise, the membrane potential does not change prior to the 
+    calculation of its value for the next timestep.
+    
     If the neurons spikes: 
     $V \rightarrow V_{reset}$
     where $V_{reset}$ is the parameter reset_val
@@ -174,6 +230,20 @@ class LIFSoftReset(LIF):
                 state: Sequence[Array], 
                 synaptic_input: Array,
                 *, key: Optional[PRNGKey] = None) -> StatefulOutput:
+        '''
+        Given the state and synaptic input of the layer, generate the new state and 
+        spike outputs.
+
+        Parameters:
+            `state` (Sequence[Array]): Contains membrane potential, synaptic current and
+                spike output state variables consecutively.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Random number generator key. Defaults to None.
+        
+        Returns:
+            (Sequence[Array]): Contains the new state at position 0 and layer spike outputs
+                at position 1.
+        '''
         mem_pot, syn_curr, spike_output = state
         
         if self.reset_val is None:
@@ -205,18 +275,18 @@ class AdaptiveLIF(StatefulLayer):
     Arguments:
         `decay_constants` (Array): Decay constants for the LIF neuron.
         `spike_fn` (SpikeFn): Spike treshold function with custom surrogate gradient.
-        `threshold` (Array): Spike threshold for membrane potential. Defaults to 1.
-        `reset_val` (Array): Reset value after a spike has been emitted. 
+        `threshold` (Union[float, Array]): Spike threshold for membrane potential. Defaults to 1.
+        `reset_val` (Optional[Array]): Reset value after a spike has been emitted. 
                         Defaults to None.
         `stop_reset_grad` (bool): Boolean to control if the gradient is propagated
                         through the refectory potential.
-        `init_fn` (Callable): Function to initialize the state of the spiking neurons.
+        `init_fn` (Optional[Callable]): Function to initialize the state of the spiking neurons.
             Defaults to initialization with zeros if nothing else is provided.
-        `shape` (StateShape): Shape of the neuron layer.
-        `key` (PRNGKey): Random number generator key for initialization of parameters.
+        `shape` (Optional[StateShape]): Shape of the neuron layer.
+        `key` (Optional[PRNGKey]): Random number generator key for initialization of parameters.
     """
-    decay_constants: Array
-    threshold: Array
+    decay_constants: Union[Sequence[float], Array]
+    threshold: Union[float, Array]
     ada_step_val: Array 
     ada_decay_constant: Array 
     ada_coupling_var: Array 
@@ -224,12 +294,12 @@ class AdaptiveLIF(StatefulLayer):
     reset_val: Optional[Array]
 
     def __init__(self,
-                decay_constants: float,
+                decay_constants: Union[Sequence[float], Array],
                 ada_decay_constant: float = [.8] ,
                 ada_step_val: float = [1.0],
                 ada_coupling_var: float = [.5],
                 spike_fn: Callable = superspike_surrogate(10.),
-                threshold: float = 1.,
+                threshold: Union[float, Array] = 1.,
                 stop_reset_grad: bool = True,
                 reset_val: Optional[float] = None,
                 init_fn: Optional[Callable] = None,
@@ -252,6 +322,20 @@ class AdaptiveLIF(StatefulLayer):
                     key: PRNGKey, 
                     *args, 
                     **kwargs) -> Sequence[Array]:
+        '''
+        Initialize and return the state variables membrane potential, adaptive variables 
+        and spike output for the layer.
+
+        Parameters:
+            `shape` (StateShape): Shape of the neuron layer.
+            `key` (PRNGKey): Random number generator key for initialization of parameters.
+            `*args`
+            `**kwargs`
+
+        Returns:
+            (Sequence[Array]): Contains the initial membrane potential, adaptive variables
+                and spike output state variables consecutively.
+        '''
         init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
         init_state_ada = jnp.zeros(shape)
         init_state_spikes = jnp.zeros(shape)
@@ -261,6 +345,20 @@ class AdaptiveLIF(StatefulLayer):
                 state: Sequence[Array], 
                 synaptic_input: Array, 
                 *, key: Optional[PRNGKey] = None) -> StatefulOutput:
+        '''
+        Given the state and synaptic input of the layer, generate the new state and 
+        spike outputs.
+
+        Parameters:
+            `state` (Sequence[Array]): Contains membrane potential, adaptive variables and
+                spike output state variables consecutively.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Random number generator key.
+
+        Returns:
+            (Sequence[Array]): Contains the new state at position 0 and layer spike outputs
+                at position 1.
+        '''
         mem_pot, ada_var = state
 
         alpha = clamp(0.5,self.decay_constants[0],1.)
