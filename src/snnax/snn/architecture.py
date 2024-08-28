@@ -23,7 +23,7 @@ class GraphStructure:
 
     Arguments:
         `num_layers` (int): The number of layers we want to have in our model.
-        `input_layer_ids` (Sequence[int]): Index of the layers are provided with 
+        `input_layer_ids` (Sequence[Sequence[int]]): Index of the layers are provided with 
             external input
         `input_connectivity` (Sequence[Sequence[int]]): Specifies how the layers 
             are connected to each other. 
@@ -57,11 +57,11 @@ def default_forward_fn(layers: Sequence[eqx.Module],
     by the connectivity graph.
 
     Arguments:
-        `layers`: Specifies layers in our model.
-        `struct`: Specifies graph structure
-        `states`: States as returned by init_state 
-        `data`: Input Sequence data of the model.
-        `key`: Random key for the forward pass.
+        `layers` (Sequence[equinox.Module]): Specifies layers in our model.
+        `struct` (GraphStructure): Specifies graph structure
+        `states` (Sequence[Array]): States as returned by init_state 
+        `data` (Sequence[Array]): Input Sequence data of the model.
+        `key` (PRNGKey): Random key for the forward pass.
     """
     keys = jrand.split(key, len(layers))
     new_states, new_outs = [], []
@@ -175,7 +175,7 @@ class StatefulModel(eqx.Module):
         `layers` (Sequence[eqx.Module]): Computational building blocks of the model.
         `forward_fn` (ForwardFn): Evaluation procedure/loop for the model. 
                         Defaults to backprop through time using lax.scan().
-    Output:
+        `loop_fn` (Callable): Defaults to jax.lax.scan. A looping function.
     """
     graph_structure: GraphStructure
     layers: Sequence[eqx.Module]
@@ -206,9 +206,11 @@ class StatefulModel(eqx.Module):
         shape is computed using a mock input.
         
         Arguments:
-            `in_shape`: GraphStructure object to specify network topology.
-            `key`: Computational building blocks of the model.
+            `in_shape` (Union[Sequence[Tuple[int]], Tuple[int]]): Shape of the input for the model.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
+
         Returns:
+            `[0]` (Sequence[Sequence[Array]]): States of the individual layers of the model.
         """
         keys = jrand.split(key, len(self.layers))
         states, outs = [], []
@@ -256,10 +258,28 @@ class StatefulModel(eqx.Module):
         return states
 
     def __call__(self, 
-                input_states: Sequence[Array], 
-                input_batch,
+                input_states: Sequence[Sequence[Array]], 
+                input_batch: Sequence[Array],
                 key: PRNGKey,
                 burnin: int = 0) -> Tuple:
+        """
+        Takes the input states of the model and the batched network input.
+        Returns new model states and model outputs.
+
+        Parameters:
+            `input_states` (Sequence[Sequence[Array]]): States of the layers
+                of the model.
+            `input_batch` (Sequence[Array]): Input batch for the model.
+            `key` (PRNGKey): Random number generator key.
+            `burnin` (int): Defaults to 0. Specifies the number inputs sliced from
+                the input batch that the network is run on before backpropagation
+                through time is applied.
+
+        Returns:
+            `[0]` (Sequence[Sequence[Array]]): Updated states of the layers of the model.
+            `[1]` (Sequence[Array]): Batched outputs of the model generated from the 
+                input batch. 
+        """
         # Partial initialization of the forward function
         forward_fn = ft.partial(self.forward_fn, 
                                 self.layers, 
