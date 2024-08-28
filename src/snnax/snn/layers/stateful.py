@@ -24,9 +24,13 @@ class StatefulLayer(eqx.Module):
     shape: StateShape
 
     def __init__(self, 
-                init_fn: Callable = default_init_fn, 
+                init_fn: Callable = None, 
                 shape: Optional[StateShape] = None) -> None:
-        self.init_fn = init_fn
+        if init_fn is None:
+            self.init_fn = default_init_fn
+        else:
+            assert callable(init_fn), "Initialization function must be callable"
+            self.init_fn = init_fn
         self.shape = shape
 
     @staticmethod

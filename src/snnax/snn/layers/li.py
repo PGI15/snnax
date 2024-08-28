@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence, Union
 
 from jax.lax import clamp
 
@@ -27,6 +27,16 @@ class SimpleLI(StatefulLayer):
                 key: Optional[PRNGKey] = None,) -> None:
         super().__init__(init_fn, shape)
         self.decay_constants = self.init_parameters(decay_constants, shape)
+
+    def init_state(self, 
+                    shape: StateShape, 
+                    key: PRNGKey, 
+                    *args, 
+                    **kwargs) -> Sequence[Array]:
+        init_state_mem_pot = self.init_fn(shape, key, *args, **kwargs)
+        
+        return [init_state_mem_pot]
+
 
     def __call__(self, 
                 state: Array, 

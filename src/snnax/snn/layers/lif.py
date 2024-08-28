@@ -222,6 +222,7 @@ class AdaptiveLIF(StatefulLayer):
     ada_coupling_var: Array 
     stop_reset_grad: bool
     reset_val: Optional[Array]
+    spike_fn: Callable
 
     def __init__(self,
                 decay_constants: float,
@@ -261,7 +262,7 @@ class AdaptiveLIF(StatefulLayer):
                 state: Sequence[Array], 
                 synaptic_input: Array, 
                 *, key: Optional[PRNGKey] = None) -> StatefulOutput:
-        mem_pot, ada_var = state
+        mem_pot, ada_var, st = state
 
         alpha = clamp(0.5,self.decay_constants[0],1.)
         beta = clamp(0.5, self.ada_decay_constant[0], 1.) 
