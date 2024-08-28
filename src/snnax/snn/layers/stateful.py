@@ -18,7 +18,7 @@ class StatefulLayer(eqx.Module):
 
     Arguments:
         `init_fn` (Callable): Initialization function for the state of the layer.
-        `shape` (StateShape): Shape of the state.
+        `shape` (Optional[StateShape]): Defaults to None. Shape of the state.
     """
     init_fn: Callable
     shape: StateShape

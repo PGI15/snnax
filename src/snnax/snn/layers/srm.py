@@ -66,8 +66,22 @@ class SRM(StatefulLayer):
             self.reset_val = self.init_parameters(reset_val, shape, requires_grad=True)
 
     def init_state(self, 
-                   shape: Union[Sequence[int], int], 
+                   shape: StateShape, 
                    key: Optional[PRNGKey] = None) -> Sequence[Array]:
+        """
+        Initialize and return the state variables P, Q, R and S for the layer.
+        All the state variables are initialized to arrays of zeros.
+        
+        Parameters:
+            `shape` (StateShape): Shape of the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator 
+                key for initialization of parameters.
+            `*args`
+            `**kwargs`
+        
+        Returns:
+            `[0]` (Sequence[Array]): Initial state of the layer.
+        """
         init_state_P = jnp.zeros(shape)
         init_state_Q = jnp.zeros(shape) # The synaptic currents are initialized as zeros
         output = self.layer(init_state_Q)
@@ -77,8 +91,19 @@ class SRM(StatefulLayer):
         return [init_state_P, init_state_Q, init_state_R, init_state_S]
     
     def init_out(self, 
-                shape: Union[int, Sequence[int]], 
+                shape: StateShape, 
                 key: Optional[PRNGKey] = None):
+        """
+        Initializes the output of the layer to an array of zeros.
+
+        Parameters:
+            `shape` (StateShape): Shape of the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator 
+                key for initialization of parameters.
+
+        Returns:
+            `[0]`: Initialized output of the layer.
+        """
         # The initial ouput of the layer. Initialize as an array of zeros.
         return self.layer(jnp.zeros(shape))
    
@@ -86,7 +111,20 @@ class SRM(StatefulLayer):
                 state: Sequence[Array], 
                 synaptic_input: Array, *, 
                 key: Optional[PRNGKey] = None) -> Sequence[Array]:
+        """
+        Takes the current timestep state and synaptic input of the layer and generates
+        the new state and spike output for the layer.
 
+        Parameters:
+            `state` (Sequence[Array]): Contains the state variables p, q, r, s 
+                of the layer.
+            `synaptic_input` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
+
+        Returns:
+            `[0]` (Sequence[Array]): New state of the layer.
+            `[1]` (Array): Spike outputs of the layer.
+        """
         p, q, r, s = state
 
         alpha = jax.lax.clamp(0.5, self.decay_constants.data[0], 1.0)

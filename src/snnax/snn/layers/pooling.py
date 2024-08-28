@@ -31,9 +31,6 @@ class SpikingMaxPool1d(eqx.nn.MaxPool1d):
         super().__init__(*args, **kwargs)
     
     def __call__(self, x: Array, key: Optional[PRNGKey] = None):
-        """
-        
-        """
         out = super().__call__(x) 
         return self.spike_fn(out-self.threshold)
 
@@ -61,7 +58,7 @@ class SpikingMaxPool2d(eqx.nn.MaxPool2d):
             
         super().__init__(*args, **kwargs)
     
-    def __call__(self, x, key: Optional[PRNGKey] = None):
+    def __call__(self, x: Array, key: Optional[PRNGKey] = None):
         out = super().__call__(x) 
         return self.spike_fn(out-self.threshold)
 

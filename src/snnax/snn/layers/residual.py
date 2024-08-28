@@ -28,6 +28,19 @@ class ResNetBlock(CompoundLayer):
                 states: Sequence[Array], 
                 inputs: Array, *, 
                 key: Optional[PRNGKey] = None) -> Tuple[Sequence, Sequence]:
+        """
+        Takes the current timestep state and synaptic input of the layer and generates
+        the new state and spike output for the layer.
+
+        Parameters:
+            `state` (Sequence[Array]): Contains the state variables of the layer.
+            `inputs` (Array): Input values for the layer.
+            `key` (Optional[PRNGKey]): Defaults to None. Random number generator key.
+
+        Returns:
+            `[0]` (Sequence[Array]): New state of the layer.
+            `[1]` (Array): Outputs of the layer.
+        """
         assert inputs.shape == states[-1].shape
         new_states, outs = super().__call__(states, inputs, key=key)
         outs += inputs
